@@ -15,7 +15,8 @@
             "topShelfWide2x": "./assets/images/icon-4640x1440.png"
           }
         }
-      ]
+      ],
+      "expo-router"
     ],
     "android": {
       "edgeToEdgeEnabled": true,
@@ -29,8 +30,12 @@
         "image": "./assets/images/icon-1920x720.png"
       }
     },
+    "web": {
+      "bundler": "metro"
+    },
     "newArchEnabled": true,
     "name": "YouStrict",
+    "scheme": "youstrict",
     "slug": "YouStrict"
   }
 }

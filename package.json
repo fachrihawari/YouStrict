@@ -1,6 +1,7 @@
 {
   "name": "youstrict",
   "version": "1.0.0",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "EXPO_TV=1 expo start",
     "android": "EXPO_TV=1 expo run:android",
@@ -12,6 +13,9 @@
   "dependencies": {
     "@expo/metro-runtime": "~6.1.1",
     "expo": "^54.0.20",
+    "expo-constants": "~18.0.10",
+    "expo-linking": "~8.0.8",
+    "expo-router": "~6.0.14",
     "expo-splash-screen": "~31.0.10",
     "expo-status-bar": "~3.0.8",
     "nativewind": "^5.0.0-preview.2",
@@ -20,7 +24,8 @@
     "react-native": "npm:react-native-tvos@0.81.5-1",
     "react-native-css": "^3.0.1",
     "react-native-reanimated": "^4.1.5",
-    "react-native-safe-area-context": "^5.6.2",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
     "react-native-web": "^0.21.0"
   },
   "devDependencies": {
