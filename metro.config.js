@@ -1,5 +1,6 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
 const { getDefaultConfig } = require('expo/metro-config');
+const { withNativewind } = require("nativewind/metro");
 
 const config = getDefaultConfig(__dirname);
 
@@ -21,4 +22,4 @@ if (process.env?.EXPO_TV === '1') {
 }
  */
 
-module.exports = config;
+module.exports = withNativewind(config);
