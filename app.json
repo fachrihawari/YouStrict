@@ -18,6 +18,9 @@
       ],
       "expo-router"
     ],
+     "experiments": {
+      "typedRoutes": true
+    },
     "android": {
       "edgeToEdgeEnabled": true,
       "splash": {
