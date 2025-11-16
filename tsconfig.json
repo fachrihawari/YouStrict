@@ -1,5 +1,7 @@
 {
-  "compilerOptions": {},
+  "compilerOptions": {
+    "types": ["bun-types"]
+  },
   "extends": "expo/tsconfig.base",
   "include": [
     "**/*.ts",
