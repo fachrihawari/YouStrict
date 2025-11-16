@@ -1,18 +1,5 @@
-#!/usr/bin/env bun
-
 import { $ } from "bun";
 import type { Video } from "../types/video";
-
-interface YtDlpVideo {
-  id: string;
-  title: string;
-  duration: number;
-  view_count: number;
-  thumbnail: string;
-  timestamp: number;
-  channel: string;
-  uploader_id: string; 
-}
 
 async function downloadChannelMetadata(channelUrl: string, outputFileName: string) {
   console.log(`\n📡 Stage 1: Fetching video IDs from channel`);
