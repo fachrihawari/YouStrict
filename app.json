@@ -16,9 +16,10 @@
           }
         }
       ],
-      "expo-router"
+      "expo-router",
+      "expo-audio"
     ],
-     "experiments": {
+    "experiments": {
       "typedRoutes": true
     },
     "android": {

@@ -1,11 +1,23 @@
-import { Link } from 'expo-router';
 import { Text, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { entries as data } from '../data/cocobi.json';
+import VideoCard from '../components/VideoCard';
+import { Stack } from 'expo-router';
 
 export default function IndexPage() {
   return (
-    <View className='h-screen'>
-      <Text className='text-2xl'>Welcome to the Index Page</Text>
-      <Link href='/videos/xCq8WVLfaEk'>Go to Video Page</Link>
+    <View className='flex-1 bg-gray-50'>
+      <Stack.Screen options={{ title: "YouStrict" }} />
+      <FlashList
+        data={data}
+        numColumns={4}
+        renderItem={({ item }) => (
+          <View className='p-2'>
+            <VideoCard video={item} />
+          </View>
+        )}
+        keyExtractor={(item) => item.id}
+      />
     </View>
   )
 }

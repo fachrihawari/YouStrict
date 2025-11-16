@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 import { YoutubeView, useYouTubePlayer } from 'react-native-youtube-bridge';
 
@@ -14,6 +14,7 @@ export default function VideoPage() {
 
   return (
     <View className='h-screen'>
+      <Stack.Screen options={{ headerShown: false }} />
       <YoutubeView player={player} style={{ flex: 1 }} />
     </View>
   )
