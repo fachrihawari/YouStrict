@@ -36,21 +36,24 @@ async function downloadChannelMetadata(channelUrl: string, outputFileName: strin
       const totalBatches = Math.ceil(ids.length / BATCH_SIZE);
       
       console.log(`   Batch ${batchNum}/${totalBatches}: Processing ${batch.length} videos...`);
+      console.time(`      Batch ${batchNum} done in`);
       
       // Fetch all videos in batch concurrently
       const batchPromises = batch.map(async (videoId) => {
         try {
-          const result = await $`yt-dlp --skip-download --print '{"id":"%(id)s","title":"%(title)s","duration":%(duration)s,"view_count":%(view_count)s,"thumbnail":"%(thumbnail)s","timestamp":%(timestamp)s,"channel":"%(channel)s","uploader_id":"%(uploader_id)s"}' https://www.youtube.com/watch?v=${videoId}`.text();
-          const video: YtDlpVideo = JSON.parse(result.trim());
+          // Use tab-separated format to avoid JSON escaping issues
+          const result = await $`yt-dlp --skip-download --print "%(id)s\t%(title)s\t%(duration)s\t%(view_count)s\t%(thumbnail)s\t%(timestamp)s\t%(channel)s\t%(uploader_id)s" https://www.youtube.com/watch?v=${videoId}`.text();
+          const [id, title, duration, viewCount, thumbnail, timestamp, channel, uploaderId] = result.trim().split('\\t');
+          
           return {
-            id: video.id,
-            title: video.title,
-            duration: video.duration,
-            views: video.view_count,
-            thumbnail: video.thumbnail,
-            timestamp: video.timestamp,
-            channelId: video.uploader_id,
-            channelName: video.channel
+            id,
+            title,
+            duration: parseInt(duration),
+            views: parseInt(viewCount),
+            thumbnail,
+            timestamp: parseInt(timestamp),
+            channelId: uploaderId,
+            channelName: channel
           };
         } catch (error) {
           console.error(`   ⚠️  Failed to fetch ${videoId}:`, error);
@@ -60,6 +63,7 @@ async function downloadChannelMetadata(channelUrl: string, outputFileName: strin
       
       const batchResults = await Promise.all(batchPromises);
       videos.push(...batchResults.filter((v): v is Video => v !== null));
+      console.timeEnd(`      Batch ${batchNum} done in`);
     }
     
     console.log(`   ✓ Successfully fetched ${videos.length}/${ids.length} videos`);
