@@ -22,4 +22,8 @@ if (process.env?.EXPO_TV === '1') {
 }
  */
 
+
+// drizzle: add sql to sourceExts
+config.resolver.sourceExts.push('sql');
+
 module.exports = withNativewind(config);

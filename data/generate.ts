@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import type { Video } from "../types/video";
+import type { Video } from "../db/schema";
 
 async function downloadChannelMetadata(channelUrl: string, outputFileName: string) {
   console.log(`\n📡 Stage 1: Fetching video IDs from channel`);
