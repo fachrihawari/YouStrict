@@ -19,46 +19,68 @@ pip install yt-dlp
 Run the script with Bun by providing the channel name:
 
 ```bash
-bun run data/generate.ts <channel-name>
+bun generate.ts <channel-name>
 ```
 
 The script will:
 - Construct the channel URL: `https://www.youtube.com/@<channel-name>/videos`
-- Save the output as: `data/<channel-name>.json`
+- Save the output as: `<channel-name>.json`
+- Automatically update `index.ts` with the new import and entry
 
 ## Examples
 
 ```bash
-# Download CocomelonIndonesia channel
-bun run data/generate.ts CocomelonIndonesia
-# Output: data/CocomelonIndonesia.json
+# Download a new channel
+bun generate.ts CocomelonIndonesia
+# Creates: CocomelonIndonesia.json
+# Updates: index.ts (adds import and spreads entries)
 
-# Download another channel
-bun run data/generate.ts PeppaPigOfficial
-# Output: data/PeppaPigOfficial.json
+# Update existing channels
+bun generate.ts BabyBusID
+bun generate.ts BingIndonesia
+bun generate.ts LeoSiPenjagaAlam
+bun generate.ts SheriffLabradorID
+bun generate.ts Yes_Neo_ID
+bun generate.ts cocobitoys_id
 ```
 
 ## Output Format
 
-The script generates a JSON file with this structure:
+The script generates a JSON file as a direct array:
 
 ```json
-{
-  "entries": [
-    {
-      "id": "video_id",
-      "title": "Video Title",
-      "duration": 123,
-      "view_count": 1000,
-      "thumbnail": "https://i.ytimg.com/vi/..."
-    }
-  ]
-}
+[
+  {
+    "id": "video_id",
+    "title": "Video Title",
+    "duration": 123,
+    "views": 1000,
+    "thumbnail": "https://i.ytimg.com/vi/..."
+  }
+]
 ```
 
 Each video entry contains:
 - `id`: YouTube video ID
 - `title`: Video title
 - `duration`: Video duration in seconds
-- `view_count`: Number of views
+- `views`: Number of views
 - `thumbnail`: URL of the highest quality thumbnail
+
+## Auto-generated index.ts
+
+The script automatically maintains `index.ts` which exports all videos:
+
+```typescript
+import BabyBusIDEntries from './BabyBusID.json';
+import BingIndonesiaEntries from './BingIndonesia.json';
+// ... more imports
+
+export const entries = [
+  ...BabyBusIDEntries,
+  ...BingIndonesiaEntries,
+  // ... more entries
+];
+```
+
+**Total videos: 3,846** (across 6 channels)

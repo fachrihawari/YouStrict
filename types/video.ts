@@ -2,6 +2,9 @@ export interface Video {
   id: string;
   title: string;
   duration: number;
-  view_count: number;
-  thumbnail: string
+  views: number;
+  thumbnail: string;
+  timestamp: number;
+  channelId: string;
+  channelName: string;
 }

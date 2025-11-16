@@ -66,9 +66,9 @@ export default function VideoCard({ video }: VideoCardProps) {
           </Text>
 
           {/* View Count */}
-          {video.view_count !== null && video.view_count !== undefined && (
+          {video.views && (
             <Text className='text-sm text-gray-600'>
-              {formatViewCount(video.view_count)}
+              {formatViewCount(video.views)}
             </Text>
           )}
         </View>
