@@ -28,7 +28,11 @@
       "splash": {
         "image": "./assets/images/icon-1920x720.png"
       },
-      "package": "com.fachrihawari.YouStrict"
+      "package": "com.fachrihawari.YouStrict",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "ios": {
       "splash": {
@@ -41,6 +45,13 @@
     "newArchEnabled": true,
     "name": "YouStrict",
     "scheme": "youstrict",
-    "slug": "YouStrict"
+    "slug": "YouStrict",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "66ba3101-5508-4afb-aad6-2274a5f08683"
+      }
+    },
+    "owner": "hawari"
   }
 }
