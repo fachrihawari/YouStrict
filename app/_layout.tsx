@@ -1,10 +1,10 @@
 import './globals.css'
 import { Stack } from 'expo-router';
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
-import { db } from '../db';
-import migrations from '../drizzle/migrations';
+import { db } from '@/db';
+import migrations from '@/drizzle/migrations';
 import { useEffect, useState } from 'react';
-import { channels, videos } from '../db/schema';
+import { channels, videos } from '@/db/schema';
 import { count } from 'drizzle-orm';
 import { ActivityIndicator, Text, View } from 'react-native';
 
@@ -25,7 +25,7 @@ export default function RootLayout() {
       }
 
       console.log('⏳ Seeding videos data... \n');
-      const { entries } = await import('../data');
+      const { entries } = await import('@/data');
       await db.insert(videos).values(entries);
 
       console.log('⏳ Fetching channel summary... \n');

@@ -1,8 +1,6 @@
 import { Link } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { View, Text, Image, Pressable } from 'react-native';
-import { useAudioPlayer } from 'expo-audio'
-import notifWav from '../assets/notif.wav';
 import cx from 'clsx';
 import { formatDuration, formatViewCount, formatRelativeTime } from '../helpers/video';
 import { Video } from '../db/schema';
@@ -12,15 +10,7 @@ interface VideoCardProps {
 }
 
 export default function VideoCard({ video }: VideoCardProps) {
-  const soundPlayer = useAudioPlayer(notifWav);
   const [isFocused, setIsFocused] = useState(false);
-
-  useEffect(() => {
-    if (isFocused) {
-      soundPlayer.seekTo(0).then(soundPlayer.play)
-    }
-  }, [isFocused, soundPlayer]);
-
   return (
     <Link href={`/videos/${video.id}`} asChild>
       <Pressable
