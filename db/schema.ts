@@ -21,7 +21,13 @@ export const channels = sqliteTable("channels", {
   totalVideos: int("total_videos").notNull(),
 });
 
+export const settings = sqliteTable("settings", {
+  key: text("key").primaryKey(), // keys: lastUpdatedAt, ...
+  value: text("value").notNull(),
+});
+
 export const schema = {
   videos,
   channels,
+  settings,
 }
