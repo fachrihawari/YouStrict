@@ -9,6 +9,7 @@ import BelajarBersamaKinderflixEntries from './BelajarBersamaKinderflix.json';
 import MarbelEducaStudioEntries from './MarbelEducaStudio.json';
 import minivilaidEntries from './minivilaid.json';
 import NussaOfficialSeriesEntries from './NussaOfficialSeries.json';
+import SiKecilPintar_Entries from './SiKecilPintar_.json';
 
 export const entries = [
   ...cocobitoys_idEntries,
@@ -21,6 +22,7 @@ export const entries = [
   ...MarbelEducaStudioEntries,
   ...minivilaidEntries,
   ...NussaOfficialSeriesEntries,
+  ...SiKecilPintar_Entries,
 ];
 
-export const lastUpdatedAt = '2025-11-18T02:57:37.037Z';
+export const lastUpdatedAt = '2025-11-18T03:28:57.714Z';
