@@ -9,7 +9,7 @@ export default function VideosPage() {
 
   return (
     <View className='flex-1 bg-gray-50'>
-      <Stack.Screen options={{ title: "YouStrict" }} />
+      <Stack.Screen options={{ title: "YouStrict", headerBackVisible: false }} />
       <FlashList
         data={videos}
         onEndReached={loadNextPage}
