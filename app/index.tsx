@@ -1,35 +1,51 @@
-import { ActivityIndicator, Text, View } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import VideoCard from '@/components/video-card';
-import { Stack } from 'expo-router';
-import { useVideos } from '@/hooks/use-videos';
+import { Text, TextInput, View } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 
 export default function IndexPage() {
-  const { videos, loading, loadNextPage } = useVideos();
+  const router = useRouter();
+  const [answer, setAnswer] = useState('');
+
+  // Generate a random math question
+  const mathQuestion = useMemo(() => {
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    const correctAnswer = num1 + num2;
+    
+    return {
+      question: `${num1} + ${num2}`,
+      correctAnswer: correctAnswer.toString()
+    };
+  }, []);
+
+  const handleSubmit = () => {
+    if (answer.trim() === mathQuestion.correctAnswer) {
+      router.navigate('/videos');
+    } else {
+      setAnswer('');
+    }
+  };
 
   return (
-    <View className='flex-1 bg-gray-50'>
-      <Stack.Screen options={{ title: "YouStrict" }} />
-      <FlashList
-        data={videos}
-        onEndReached={loadNextPage}
-        onEndReachedThreshold={0.1}
-        ListFooterComponent={
-          loading && (
-            <View className='flex justify-center items-center h-20'>
-              <ActivityIndicator size='large' color='tomato' />
-              <Text className='mt-2 text-red-600'>Loading more videos...</Text>
-            </View>
-          )
-        }
-        numColumns={4}
-        renderItem={({ item }) => (
-          <View className='p-2'>
-            <VideoCard video={item} />
-          </View>
-        )}
-        keyExtractor={(item) => item.id}
-      />
+    <View className='flex-1 bg-white justify-center items-center'>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View className='bg-white'>
+        <Text className='text-4xl font-bold text-gray-900 text-center mb-4'>
+          Parent Verification
+        </Text>
+        <Text className='text-3xl text-gray-700 text-center mb-4'>
+          What is {mathQuestion.question}?
+        </Text>
+        <TextInput
+          value={answer}
+          onChangeText={setAnswer}
+          onSubmitEditing={handleSubmit}
+          keyboardType='number-pad'
+          autoFocus
+          placeholder='Enter answer'
+          className='bg-white text-3xl py-6 px-8 rounded-2xl border-2 border-gray-300'
+        />
+      </View>
     </View>
-  )
+  );
 }
