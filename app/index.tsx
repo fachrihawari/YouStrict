@@ -2,23 +2,20 @@ import { Text, TextInput, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import Animated, { useSharedValue, useAnimatedStyle, withSequence, withTiming, interpolateColor } from 'react-native-reanimated';
-import { useAudioPlayer } from 'expo-audio'
+import { useAudioPlayer } from 'expo-audio';
 
 export default function IndexPage() {
   const router = useRouter();
   const [answer, setAnswer] = useState('');
   const { shake, setColor, style } = useInputAnimation();
-  const wrongPlayer = useAudioPlayer(require('@/assets/sounds/wrong.mp3'))
-  const correctPlayer = useAudioPlayer(require('@/assets/sounds/correct.mp3'))
+  const wrongPlayer = useAudioPlayer(require('@/assets/sounds/wrong.mp3'));
+  const correctPlayer = useAudioPlayer(require('@/assets/sounds/correct.mp3'));
 
   const handleChangeText = (text: string) => {
     setAnswer(text);
-
-    // Reset color on text change
     setColor(0);
   };
 
-  // Generate a random math question
   const mathQuestion = useMemo(() => {
     const num1 = Math.floor(Math.random() * 10) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;
@@ -30,9 +27,9 @@ export default function IndexPage() {
     };
   }, []);
 
-  const handleSubmit =async () => {
+  const handleSubmit = async () => {
     if (answer.trim() === mathQuestion.correctAnswer) {
-      router.navigate('/videos');
+      router.push('/select-duration');
       await correctPlayer.seekTo(0);
       correctPlayer.play();
     } else {
@@ -46,7 +43,7 @@ export default function IndexPage() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View className='bg-white px-8 flex-1 items-center pt-32'>
+      <View className='bg-white px-8 flex-1 items-center pt-[calc(100vh/6)]'>
         <Text className='text-4xl font-bold text-gray-900 text-center mb-4'>
           Parental Verification
         </Text>
@@ -104,7 +101,7 @@ function useInputAnimation() {
     {
       paddingVertical: 4,
     }
-  ]
+  ];
 
   return { shake, setColor, style };
 }

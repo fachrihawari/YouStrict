@@ -3,13 +3,21 @@ import { FlashList } from '@shopify/flash-list';
 import VideoCard from '@/components/video-card';
 import { Stack } from 'expo-router';
 import { useVideos } from '@/hooks/use-videos';
+import SessionTimer from '@/components/session-timer';
 
 export default function VideosPage() {
   const { videos, loading, loadNextPage } = useVideos();
 
   return (
     <View className='flex-1 bg-gray-50'>
-      <Stack.Screen options={{ title: "YouStrict", headerBackVisible: false }} />
+      <Stack.Screen
+        options={{
+          title: "YouStrict",
+          headerBackVisible: false,
+          headerShown: true,
+          headerRight: () => <SessionTimer />
+        }}
+      />
       <FlashList
         data={videos}
         onEndReached={loadNextPage}
