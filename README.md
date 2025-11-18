@@ -225,7 +225,7 @@ eas build --platform ios
 
 ## 📄 License
 
-This project is private and maintained by [@fachrihawari](https://github.com/fachrihawari).
+This project is maintained by [@fachrihawari](https://github.com/fachrihawari).
 
 ## 🤝 Contributing
 
