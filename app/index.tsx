@@ -1,36 +1,18 @@
 import { ActivityIndicator, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import VideoCard from '@/components/VideoCard';
+import VideoCard from '@/components/video-card';
 import { Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Video } from '@/db/schema';
-import { getVideos } from '@/db/query';
+import { useVideos } from '@/hooks/use-videos';
 
 export default function IndexPage() {
-  const [page, setPage] = useState(1);
-  const [videos, setVideos] = useState<Video[]>([])
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    console.log('Fetching page', page);
-    setLoading(true);
-    getVideos(page)
-      .then((data) => {
-        if (page === 1) setVideos(data);
-        else setVideos((prevVideos) => [...prevVideos, ...data]);
-      })
-      .finally(() => setLoading(false));
-
-  }, [page]);
+  const { videos, loading, loadNextPage } = useVideos();
 
   return (
     <View className='flex-1 bg-gray-50'>
       <Stack.Screen options={{ title: "YouStrict" }} />
       <FlashList
         data={videos}
-        onEndReached={() => {
-          if (!loading) setPage((prevPage) => prevPage + 1);
-        }}
+        onEndReached={loadNextPage}
         onEndReachedThreshold={0.1}
         ListFooterComponent={
           loading && (
