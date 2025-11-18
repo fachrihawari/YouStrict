@@ -127,6 +127,20 @@ async function updateIndexFile(channelFileName: string, channelName: string) {
     console.log(`   ✓ Added to exports array`);
   }
 
+  // Update lastUpdatedAt timestamp
+  const timestampLineIndex = lines.findIndex(line => line.includes('export const lastUpdatedAt'));
+  const newTimestamp = new Date().toISOString();
+  const timestampLine = `export const lastUpdatedAt = '${newTimestamp}';`;
+
+  if (timestampLineIndex !== -1) {
+    lines[timestampLineIndex] = timestampLine;
+    console.log(`   ✓ Updated lastUpdatedAt to ${newTimestamp}`);
+  } else {
+    // If not found, append it at the end of the file
+    lines.push('', timestampLine);
+    console.log(`   ✓ Added lastUpdatedAt = ${newTimestamp}`);
+  }
+
   // Write updated content
   await Bun.write(indexPath, lines.join('\n'));
   console.log(`   ✓ Saved index.ts`);
