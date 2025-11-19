@@ -1,4 +1,4 @@
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View, Platform } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import VideoCard from '@/components/video-card';
 import { Stack } from 'expo-router';
@@ -7,6 +7,8 @@ import SessionTimer from '@/components/session-timer';
 
 export default function VideosPage() {
   const { videos, loading, loadNextPage } = useVideos();
+  const isTV = Platform.isTV;
+  const numColumns = isTV ? 4 : 1;
 
   return (
     <View className='flex-1 bg-gray-50'>
@@ -30,9 +32,9 @@ export default function VideosPage() {
             </View>
           )
         }
-        numColumns={4}
+        numColumns={numColumns}
         renderItem={({ item }) => (
-          <View className='p-2'>
+          <View className={isTV ? 'p-2' : 'px-4 py-2'}>
             <VideoCard video={item} />
           </View>
         )}
