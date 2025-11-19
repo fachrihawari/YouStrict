@@ -2,9 +2,19 @@ import SessionTimer from '@/components/session-timer';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 import { YoutubeView, useYouTubePlayer } from 'react-native-youtube-bridge';
+import { useEffect } from 'react';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 export default function VideoPage() {
   const { id } = useLocalSearchParams<'/videos/[id]'>()
+  
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+    
+    return () => {
+      ScreenOrientation.unlockAsync();
+    };
+  }, []);
   
   const player = useYouTubePlayer(id, {
     autoplay: true,
