@@ -10,6 +10,8 @@ import MarbelEducaStudioEntries from './MarbelEducaStudio.json';
 import minivilaidEntries from './minivilaid.json';
 import NussaOfficialSeriesEntries from './NussaOfficialSeries.json';
 import SiKecilPintar_Entries from './SiKecilPintar_.json';
+import cocobi_idEntries from './cocobi_id.json';
+import LittleHeroSuperZIndonesiaEntries from './LittleHeroSuperZIndonesia.json';
 
 export const entries = [
   ...cocobitoys_idEntries,
@@ -23,6 +25,8 @@ export const entries = [
   ...minivilaidEntries,
   ...NussaOfficialSeriesEntries,
   ...SiKecilPintar_Entries,
+  ...cocobi_idEntries,
+  ...LittleHeroSuperZIndonesiaEntries,
 ];
 
-export const lastUpdatedAt = '2025-11-18T03:28:57.714Z';
+export const lastUpdatedAt = '2025-12-04T14:48:09.876Z';

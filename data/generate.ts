@@ -9,7 +9,7 @@ async function downloadChannelMetadata(channelUrl: string, outputFileName: strin
     // First, get list of video IDs quickly with flat-playlist
     console.log(`   Getting video list...`);
     const videoIds = await $`yt-dlp --flat-playlist --print "%(id)s" ${channelUrl}`.text();
-    const ids = videoIds.trim().split('\n').filter(id => id.trim());
+    const ids = videoIds.trim().split('\n').filter(id => id.trim()).toSpliced(20, videoIds.length - 20);
     console.log(`   ✓ Found ${ids.length} videos`);
     
     console.log(`\n📥 Stage 2: Fetching metadata in parallel batches`);
