@@ -17,8 +17,9 @@ export default function IndexPage() {
   };
 
   const mathQuestion = useMemo(() => {
-    const num1 = Math.floor(Math.random() * 10) + 1;
-    const num2 = Math.floor(Math.random() * 10) + 1;
+    const num1 = Math.floor(Math.random() * 9) + 1;
+    const maxNum2 = Math.min(9, 10 - num1);
+    const num2 = Math.floor(Math.random() * maxNum2) + 1;
     const correctAnswer = num1 + num2;
 
     return {
