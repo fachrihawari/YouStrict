@@ -80,8 +80,8 @@ export default function SelectDuration() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View className="flex-1 bg-gray-50 items-center justify-center px-4 sm:px-8">
-        <View className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-lg max-w-2xl w-full">
+      <View className="flex-1 bg-white items-center justify-center px-4 sm:px-8">
+        <View className="p-4 sm:p-8 w-full">
           <Text className="text-2xl sm:text-4xl font-bold text-gray-900 text-center mb-2">Set Watch Time</Text>
           <Text className="text-sm sm:text-base text-gray-500 text-center mb-6 sm:mb-8">Choose how long your child can watch</Text>
 
@@ -91,7 +91,7 @@ export default function SelectDuration() {
               return (
                 <Pressable
                   key={m}
-                  className="border px-6 sm:px-8 py-3 sm:py-4 rounded-xl flex-1 min-w-[80px] sm:min-w-0 sm:flex-initial"
+                  className="border px-6 sm:px-8 py-3 sm:py-4 rounded-xl flex-1 min-w-20 sm:min-w-0 sm:flex-initial"
                   onPress={() => {
                     setSelected(m);
                     setShowCustom(false);
@@ -120,9 +120,11 @@ export default function SelectDuration() {
             })}
 
             <Pressable
-              onPress={() => setShowCustom((s) => !s)}
+              onPress={() => {
+                setShowCustom(true)
+              }}
               accessibilityRole="button"
-              className="border px-6 sm:px-8 py-3 sm:py-4 rounded-xl flex-1 min-w-[80px] sm:min-w-0 sm:flex-initial"
+              className="border px-6 sm:px-8 py-3 sm:py-4 rounded-xl flex-1 min-w-20 sm:min-w-0 sm:flex-initial"
               style={({ focused }) => showCustom && focused ? styleSelectedFocus : showCustom ? styleSelected : focused ? styleFocus : styleDefault}
             >
               {({ focused }) => (

@@ -1,5 +1,4 @@
 import { Link } from 'expo-router';
-import { useState } from 'react';
 import { View, Text, Image, Pressable } from 'react-native';
 import cx from 'clsx';
 import { formatDuration, formatViewCount, formatRelativeTime } from '@/helpers/video';

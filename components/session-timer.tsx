@@ -18,17 +18,12 @@ export default function SessionTimer() {
   };
 
   return (
-    <View className='flex-row items-center gap-4 px-4 py-2'>
-      <View className='flex-row items-center gap-2'>
-        <View className='flex-row items-baseline gap-1'>
-          <Text className='text-2xl font-bold text-gray-900 tracking-wider'>{remaining}</Text>
-        </View>
-      </View>
-      <View className='h-6 w-px bg-gray-600' />
+    <View className='flex-row items-center gap-2 px-4 py-2'>
+      <Text className='text-base sm:text-2xl font-bold text-gray-900 tracking-wider'>{remaining}</Text>
       <Pressable
         onPress={handleEndNow}
         accessibilityRole='button'
-        className='px-4 py-2 bg-red-600 focus:bg-red-700 active:bg-red-800 rounded-lg'
+        className='p-2 bg-red-600'
       >
         <Text className='text-white text-sm font-bold'>End Now</Text>
       </Pressable>
