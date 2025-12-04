@@ -10,33 +10,33 @@ function CustomDurationPicker({ value, onChange }: { value: number; onChange: (v
   const bgFocus = useResolveClassNames('bg-blue-600');
 
   return (
-    <View className="flex-row items-center justify-center gap-6 mb-8 bg-gray-50 py-6 rounded-2xl">
+    <View className="flex-row items-center justify-center gap-4 sm:gap-6 mb-6 sm:mb-8 bg-gray-50 py-4 sm:py-6 rounded-2xl">
       <Pressable
         onPress={() => onChange(Math.max(5, value - 5))}
         accessibilityRole="button"
-        className='w-12 h-12 border border-gray-300 rounded-full items-center justify-center'
+        className='w-10 h-10 sm:w-12 sm:h-12 border border-gray-300 rounded-full items-center justify-center'
         style={({ focused }) => focused && bgFocus}
       >
         {({ focused }) => (
-          <Text className={clsx('text-2xl font-bold text-white', !focused && 'text-gray-700')}>
+          <Text className={clsx('text-xl sm:text-2xl font-bold text-white', !focused && 'text-gray-700')}>
             -
           </Text>
         )}
       </Pressable>
 
-      <View className="items-center px-6">
-        <Text className="text-4xl font-bold text-gray-900">{value}</Text>
-        <Text className="text-sm text-gray-600 mt-1">minutes</Text>
+      <View className="items-center px-4 sm:px-6">
+        <Text className="text-3xl sm:text-4xl font-bold text-gray-900">{value}</Text>
+        <Text className="text-xs sm:text-sm text-gray-600 mt-1">minutes</Text>
       </View>
 
       <Pressable
         onPress={() => onChange(Math.min(180, value + 5))}
         accessibilityRole="button"
-        className='w-12 h-12 border border-gray-300 rounded-full items-center justify-center'
+        className='w-10 h-10 sm:w-12 sm:h-12 border border-gray-300 rounded-full items-center justify-center'
         style={({ focused }) => focused && bgFocus}
       >
         {({ focused }) => (
-          <Text className={clsx('text-2xl font-bold text-white', !focused && 'text-gray-700')}>
+          <Text className={clsx('text-xl sm:text-2xl font-bold text-white', !focused && 'text-gray-700')}>
             +
           </Text>
         )}
@@ -52,6 +52,12 @@ export default function SelectDuration() {
   const [selected, setSelected] = useState<number>(30);
   const [showCustom, setShowCustom] = useState(false);
   const [customValue, setCustomValue] = useState<number>(30);
+
+  const styleFocus = useResolveClassNames('border-blue-600');
+  const styleSelected = useResolveClassNames('bg-blue-600 border-blue-600');
+  const styleSelectedFocus = useResolveClassNames('bg-blue-700 border-blue-700');
+  const styleDefault = useResolveClassNames('bg-transparent border-gray-300');
+  const styleSubmitFocus = useResolveClassNames('bg-green-700');
 
   const currentDuration = showCustom ? customValue : selected;
 
@@ -74,35 +80,37 @@ export default function SelectDuration() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View className="flex-1 bg-gray-50 items-center justify-center px-8">
-        <View className="bg-white rounded-3xl p-8 shadow-lg max-w-2xl w-full">
-          <Text className="text-4xl font-bold text-gray-900 text-center mb-2">Set Watch Time</Text>
-          <Text className="text-base text-gray-500 text-center mb-8">Choose how long your child can watch</Text>
+      <View className="flex-1 bg-gray-50 items-center justify-center px-4 sm:px-8">
+        <View className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-lg max-w-2xl w-full">
+          <Text className="text-2xl sm:text-4xl font-bold text-gray-900 text-center mb-2">Set Watch Time</Text>
+          <Text className="text-sm sm:text-base text-gray-500 text-center mb-6 sm:mb-8">Choose how long your child can watch</Text>
 
-          <View className="flex-row gap-3 mb-8 justify-center">
+          <View className="flex-row flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8 justify-center">
             {options.map((m, i) => {
-              const isSelected = selected === m && !showCustom;
+              const isSelected = !showCustom && selected === m;
               return (
                 <Pressable
                   key={m}
-                  style={({ focused }) => ({
-                    backgroundColor: focused ? '#3B82F6' : isSelected ? '#2563EB' : 'white',
-                    borderWidth: 2,
-                    borderColor: isSelected ? '#2563EB' : '#E5E7EB',
-                    paddingHorizontal: 32,
-                    paddingVertical: 16,
-                    borderRadius: 12,
-                  })}
-                  hasTVPreferredFocus={i === 1}
-                  onPress={() => { setSelected(m); setShowCustom(false); }}
+                  className="border px-6 sm:px-8 py-3 sm:py-4 rounded-xl flex-1 min-w-[80px] sm:min-w-0 sm:flex-initial"
+                  onPress={() => {
+                    setSelected(m);
+                    setShowCustom(false);
+                  }}
+                  style={({ focused }) => isSelected && focused ? styleSelectedFocus : isSelected ? styleSelected : focused ? styleFocus : styleDefault}
                   accessibilityRole="button"
                 >
                   {({ focused }) => (
                     <>
-                      <Text className={isSelected || focused ? 'text-white text-xl font-bold text-center' : 'text-gray-700 text-xl font-bold text-center'}>
+                      <Text className={clsx('text-lg sm:text-xl font-bold text-center', {
+                        'text-blue-600': !isSelected && focused,
+                        'text-white': isSelected
+                      })}>
                         {m}
                       </Text>
-                      <Text className={isSelected || focused ? 'text-white opacity-90 text-xs text-center mt-1' : 'text-gray-500 text-xs text-center mt-1'}>
+                      <Text className={clsx('text-xs text-center mt-1', {
+                        'text-blue-600': !isSelected && focused,
+                        'text-white': isSelected
+                      })}>
                         minutes
                       </Text>
                     </>
@@ -114,21 +122,21 @@ export default function SelectDuration() {
             <Pressable
               onPress={() => setShowCustom((s) => !s)}
               accessibilityRole="button"
-              style={({ focused }) => ({
-                backgroundColor: focused ? '#3B82F6' : showCustom ? '#2563EB' : 'white',
-                borderWidth: 2,
-                borderColor: showCustom ? '#2563EB' : '#E5E7EB',
-                paddingHorizontal: 32,
-                paddingVertical: 16,
-                borderRadius: 12,
-              })}
+              className="border px-6 sm:px-8 py-3 sm:py-4 rounded-xl flex-1 min-w-[80px] sm:min-w-0 sm:flex-initial"
+              style={({ focused }) => showCustom && focused ? styleSelectedFocus : showCustom ? styleSelected : focused ? styleFocus : styleDefault}
             >
               {({ focused }) => (
                 <>
-                  <Text className={showCustom || focused ? 'text-white text-xl font-bold text-center' : 'text-gray-700 text-xl font-bold text-center'}>
+                  <Text className={clsx('text-lg sm:text-xl font-bold text-center', {
+                    'text-blue-600': !showCustom && focused,
+                    'text-white': showCustom
+                  })}>
                     ⚙️
                   </Text>
-                  <Text className={showCustom || focused ? 'text-white opacity-90 text-xs text-center mt-1' : 'text-gray-500 text-xs text-center mt-1'}>
+                  <Text className={clsx('text-xs text-center mt-1 opacity-90', {
+                    'text-blue-600': !showCustom && focused,
+                    'text-white': showCustom
+                  })}>
                     Custom
                   </Text>
                 </>
@@ -138,24 +146,20 @@ export default function SelectDuration() {
 
           {showCustom && <CustomDurationPicker value={customValue} onChange={setCustomValue} />}
 
-          <View className="bg-blue-50 rounded-xl p-4 mb-6">
-            <View className="flex-row items-center justify-center gap-2">
-              <Text className="text-sm text-blue-600 font-medium">⏰ Session ends at</Text>
-              <Text className="text-lg font-bold text-blue-900">{previewEnd}</Text>
+          <View className="bg-blue-50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+            <View className="flex-row items-center justify-center gap-2 flex-wrap">
+              <Text className="text-xs sm:text-sm text-blue-600 font-medium">⏰ Session ends at</Text>
+              <Text className="text-base sm:text-lg font-bold text-blue-900">{previewEnd}</Text>
             </View>
           </View>
 
           <Pressable
             onPress={startSession}
             accessibilityRole="button"
-            style={({ focused }) => ({
-              backgroundColor: focused ? '#16A34A' : '#22C55E',
-              paddingVertical: 16,
-              borderRadius: 12,
-              alignItems: 'center',
-            })}
+            className="py-3 sm:py-4 rounded-xl items-center bg-green-600"
+            style={({ focused }) => focused && styleSubmitFocus}
           >
-            <Text className="text-white text-xl font-bold text-center">Start Watching</Text>
+            <Text className="text-white text-lg sm:text-xl font-bold text-center">Start Watching</Text>
           </Pressable>
         </View>
       </View>
