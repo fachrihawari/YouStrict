@@ -61,7 +61,7 @@ export default function IndexPage() {
             onSubmitEditing={handleSubmit}
             keyboardType='number-pad'
             autoFocus
-            className='w-24 h-16 text-3xl'
+            className='w-24 h-16 text-3xl text-center'
           />
         </Animated.View>
       </View>

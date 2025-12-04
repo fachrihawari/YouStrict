@@ -10,7 +10,7 @@ export default function RootLayout() {
   if (!isReady) {
     return (
       <View className='h-screen bg-white flex justify-center items-center'>
-        <ActivityIndicator size={48} color='tomato' />
+        <ActivityIndicator size={48} colorClassName='accent-pink-600' />
         <Text className='mt-4 text-lg'>Preparing your data...</Text>
       </View>
     )
