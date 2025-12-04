@@ -1,6 +1,6 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
 const { getDefaultConfig } = require('expo/metro-config');
-const { withNativewind } = require("nativewind/metro");
+const { withUniwindConfig } = require('uniwind/metro'); 
 
 const config = getDefaultConfig(__dirname);
 
@@ -25,5 +25,8 @@ if (process.env?.EXPO_TV === '1') {
 
 // drizzle: add sql to sourceExts
 config.resolver.sourceExts.push('sql');
+config.resolver.sourceExts.push('css');
 
-module.exports = withNativewind(config);
+module.exports = withUniwindConfig(config, {
+  cssEntryFile: './app/globals.css'
+});
