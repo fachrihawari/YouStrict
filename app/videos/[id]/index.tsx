@@ -5,6 +5,7 @@ import { YoutubeView, useYouTubePlayer } from 'react-native-youtube-bridge';
 import { useEffect } from 'react';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { setStatusBarHidden } from 'expo-status-bar';
 
 export default function VideoPage() {
   const { id } = useLocalSearchParams<'/videos/[id]'>()
@@ -12,9 +13,11 @@ export default function VideoPage() {
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+    setStatusBarHidden(true)
 
     return () => {
       ScreenOrientation.unlockAsync();
+      setStatusBarHidden(false)
     };
   }, []);
 

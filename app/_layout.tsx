@@ -1,8 +1,9 @@
 import './globals.css'
 import { Stack } from 'expo-router';
-import { ActivityIndicator, StatusBar, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { useDatabaseInit } from '@/hooks/use-database-init';
 import { SessionProvider } from '@/contexts/session-context';
+import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
   const { isReady } = useDatabaseInit();
@@ -18,7 +19,7 @@ export default function RootLayout() {
 
   return (
     <SessionProvider>
-      <StatusBar barStyle='dark-content' />
+      <StatusBar style='auto' />
       <Stack screenOptions={{ headerShown: false }} />
     </SessionProvider>
   );
