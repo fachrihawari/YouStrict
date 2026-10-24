@@ -24,6 +24,7 @@ catalog/channels.json ──▶ GitHub Action (daily, yt-dlp) ──▶ GitHub P
   - Start a session (5–180 min).
   - Turn channels on or off. New channels start **off**.
   - Hide individual videos.
+  - Filters: hide videos whose title contains a blocked word, or that are longer than a limit.
   - Request a new channel.
   - Sync status and changing the PIN.
 - **Kid area:**

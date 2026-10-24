@@ -17,6 +17,11 @@ Targets: Android TV + Android phone/tablet. No web, no Apple TV.
 - Use `useDbQuery` (hooks/use-db-query.ts) for reactive reads that join tables; drizzle's
   `useLiveQuery` only watches the root table.
 - Parent choices (`channels.enabled`, `videos.hidden`) must survive syncs: upsert, don't delete+insert.
+- A video is visible to the child only if its channel is enabled, it isn't hidden, and it passes the parent's
+  Filters. Every kid-facing query (grid, next video, ...) must include `filterConditions(getFilters())` from
+  `helpers/filters.ts`, and `blockedReason()` must stay its JS twin (`helpers/filters.test.ts` checks this).
+- Tests: `bun test`; files sit next to the code. `test/setup.ts` swaps `@/db` for an in-memory bun:sqlite DB,
+  so DB logic is testable. Keep logic that needs testing out of React components.
 - After changing `db/schema.ts`, run `bunx drizzle-kit generate` and add the file to `drizzle/migrations.js`.
 
 ## Navigation & safety

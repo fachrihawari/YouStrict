@@ -6,7 +6,9 @@ import FocusButton from '@/components/focus-button';
 import { useSession } from '@/contexts/session-context';
 import { useChannels } from '@/hooks/use-channels';
 import { computeExpiresAt } from '@/helpers/session';
-import { getSetting, setSetting } from '@/lib/settings';
+import type { VideoFilters } from '@/helpers/filters';
+import { useDbQuery } from '@/hooks/use-db-query';
+import { getFilters, getSetting, setSetting } from '@/lib/settings';
 
 const PRESETS = [15, 30, 60];
 const MIN = 5;
@@ -17,6 +19,7 @@ export default function ParentHome() {
   const { startSession } = useSession();
   const channels = useChannels();
   const enabledCount = channels.filter((c) => c.enabled).length;
+  const filters = useDbQuery(getFilters, ['settings'], []);
   const [minutes, setMinutes] = useState(() => Number(getSetting('defaultDuration')) || 30);
 
   const endsAt = useMemo(
@@ -69,6 +72,7 @@ export default function ParentHome() {
 
       <View className='gap-4 md:w-80'>
         <NavCard href='/parent/channels' title='📺 Channels' subtitle={`${enabledCount} of ${channels.length} turned on`} preferred={enabledCount === 0} />
+        <NavCard href='/parent/filters' title='🚫 Filters' subtitle={filtersSummary(filters)} />
         <NavCard href='/parent/settings' title='⚙️ Settings' subtitle='Sync, PIN' />
       </View>
     </ScrollView>
@@ -83,7 +87,14 @@ function Stepper({ label, onPress }: { label: string; onPress: () => void }) {
   );
 }
 
-function NavCard({ href, title, subtitle, preferred }: { href: '/parent/channels' | '/parent/settings'; title: string; subtitle: string; preferred?: boolean }) {
+function filtersSummary({ keywords, maxDurationMinutes }: VideoFilters) {
+  const parts = [];
+  if (keywords.length) parts.push(`${keywords.length} blocked word${keywords.length === 1 ? '' : 's'}`);
+  if (maxDurationMinutes !== null) parts.push(`max ${maxDurationMinutes} min`);
+  return parts.length ? parts.join(' · ') : 'Blocked words, video length';
+}
+
+function NavCard({ href, title, subtitle, preferred }: { href: '/parent/channels' | '/parent/filters' | '/parent/settings'; title: string; subtitle: string; preferred?: boolean }) {
   return (
     <Link href={href} asChild>
       <FocusButton hasTVPreferredFocus={preferred} className='p-5 rounded-2xl border-2 border-gray-200 bg-white' focusClassName='border-blue-600 bg-blue-50'>

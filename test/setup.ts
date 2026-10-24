@@ -1,6 +1,7 @@
 // Preloaded by `bun test` (see bunfig.toml). Swaps the Expo native modules for
 // in-process stand-ins so app logic runs under Bun:
 //   @/db              → in-memory bun:sqlite, migrated from ./drizzle like the app
+//   expo-sqlite       → no-op change listener
 //   expo-secure-store → a Map
 //   expo-crypto       → node:crypto
 //   expo-constants    → a fixed catalog URL
@@ -17,6 +18,8 @@ export const db = drizzle(sqlite, { schema });
 migrate(db, { migrationsFolder: 'drizzle' });
 
 mock.module('@/db', () => ({ db, sqlite }));
+// hooks/use-db-query.ts subscribes to changes; nothing to watch in tests.
+mock.module('expo-sqlite', () => ({ addDatabaseChangeListener: () => ({ remove() {} }) }));
 
 export const secureStore = new Map<string, string>();
 mock.module('expo-secure-store', () => ({
