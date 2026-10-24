@@ -1,0 +1,13 @@
+name: Add channel
+description: Add a YouTube channel to the YouStrict catalog (owner only).
+title: 'Add channel'
+labels: [add-channel]
+body:
+  - type: input
+    id: handle
+    attributes:
+      label: YouTube handle
+      description: The part after @ in youtube.com/@handle
+      placeholder: NussaOfficialSeries
+    validations:
+      required: true
