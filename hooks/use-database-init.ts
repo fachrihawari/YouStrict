@@ -1,73 +1,55 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
-import { count, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import migrations from '@/drizzle/migrations';
-import { channels, settings, videos } from '@/db/schema';
+import { hasCachedCatalog, syncCatalog } from '@/lib/catalog';
+import { getSetting } from '@/lib/settings';
 
-export function useDatabaseInit() {
-  const { success } = useMigrations(db, migrations);
-  const [isReady, setIsReady] = useState(false);
+const RESYNC_AFTER_MS = 6 * 60 * 60 * 1000;
+
+export type DataState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string; retry: () => void }
+  | { status: 'ready' };
+
+// Migrations → catalog. The app renders from the local cache immediately when
+// it has one and syncs in the background; only the very first launch waits.
+export function useDatabaseInit(): DataState {
+  const { success, error: migrationError } = useMigrations(db, migrations);
+  const [state, setState] = useState<DataState>({ status: 'loading' });
+
+  const start = useCallback(async () => {
+    if (hasCachedCatalog()) {
+      setState({ status: 'ready' });
+      syncCatalog();
+      return;
+    }
+    setState({ status: 'loading' });
+    const result = await syncCatalog();
+    if (result.status === 'error' && !hasCachedCatalog()) {
+      setState({ status: 'error', message: result.message, retry: start });
+    } else {
+      setState({ status: 'ready' });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (success) start();
+  }, [success, start]);
 
   useEffect(() => {
     if (!success) return;
-
-    (async () => {
-      console.log('⏳ Checking last updated at... \n');
-      const { lastUpdatedAt } = await import('@/data');
-      const meta = await db.query.settings.findFirst({
-        where: (settings, { eq }) => eq(settings.key, 'lastUpdatedAt'),
-      });
-      console.log('Fetched last updated at: ', meta?.value ?? 'none', '\n');
-      console.log('New last updated at: ', lastUpdatedAt, '\n');
-
-      if (meta?.value === lastUpdatedAt) {
-        console.log('✅ Data already up to date. Skipping seeding. \n');
-        setIsReady(true);
-        return;
-      }
-
-      // Clear existing data before reseeding
-      console.log('⏳ Clearing old data... \n');
-      await db.delete(channels);
-      await db.delete(videos);
-
-      console.log('⏳ Seeding videos data... \n');
-      const { entries } = await import('@/data');
-      await db.insert(videos).values(entries);
-
-      console.log('⏳ Fetching channel summary... \n');
-      // Aggregate channels data
-      const channelResults = await db
-        .select({
-          id: videos.channelId,
-          name: videos.channelName,
-          totalVideos: count(videos.id),
-        })
-        .from(videos)
-        .groupBy(videos.channelId);
-
-      console.log('⏳ Seeding channels data... \n');
-      await db.insert(channels).values(channelResults);
-
-      // Update or insert lastUpdatedAt
-      console.log('⏳ Updating lastUpdatedAt... \n');
-      if (meta) {
-        await db
-          .update(settings)
-          .set({ value: lastUpdatedAt })
-          .where(eq(settings.key, 'lastUpdatedAt'));
-      } else {
-        await db
-          .insert(settings)
-          .values({ key: 'lastUpdatedAt', value: lastUpdatedAt });
-      }
-
-      console.log('✅ All data seeded successfully. \n');
-
-      setIsReady(true);
-    })();
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next !== 'active') return;
+      const last = Date.parse(getSetting('lastSyncAt') ?? '');
+      if (!(Date.now() - last < RESYNC_AFTER_MS)) syncCatalog();
+    });
+    return () => sub.remove();
   }, [success]);
 
-  return { isReady };
+  if (migrationError) {
+    return { status: 'error', message: `Database error: ${migrationError.message}`, retry: () => {} };
+  }
+  return state;
 }

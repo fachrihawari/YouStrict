@@ -8,11 +8,16 @@
         }
       ],
       "expo-router",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false
+        }
+      ],
       "expo-sqlite",
       "expo-asset",
       "expo-secure-store",
-       [
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#FFFFFF",
@@ -30,13 +35,10 @@
         "image": "./assets/images/icon-1920x720.png"
       },
       "package": "com.fachrihawari.YouStrict",
-      "permissions": [
+      "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
-    },
-    "web": {
-      "bundler": "metro"
     },
     "newArchEnabled": true,
     "name": "YouStrict",
@@ -46,7 +48,8 @@
       "router": {},
       "eas": {
         "projectId": "66ba3101-5508-4afb-aad6-2274a5f08683"
-      }
+      },
+      "catalogUrl": "https://fachrihawari.github.io/YouStrict/catalog/index.json"
     },
     "owner": "hawari"
   }

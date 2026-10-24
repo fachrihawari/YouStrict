@@ -1,0 +1,48 @@
+name: Publish catalog
+
+on:
+  schedule:
+    - cron: '0 20 * * *' # 03:00 WIB daily
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - catalog/**
+      - scripts/**
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: catalog
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Always latest: YouTube changes often and yt-dlp follows quickly.
+      - run: pip install --upgrade yt-dlp
+      - run: bun scripts/build-catalog.ts --out dist
+        env:
+          CATALOG_URL: https://fachrihawari.github.io/YouStrict/catalog/index.json
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

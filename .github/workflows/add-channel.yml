@@ -1,0 +1,64 @@
+name: Add channel
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: add-channel
+  cancel-in-progress: false
+
+jobs:
+  add:
+    # Public repo + children's app: only the repo owner may add channels.
+    if: >-
+      contains(github.event.issue.labels.*.name, 'add-channel') &&
+      github.event.issue.author_association == 'OWNER' &&
+      github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --upgrade yt-dlp
+
+      - id: add
+        env:
+          # Never interpolate issue content directly into the script.
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          handle=$(printf '%s\n' "$ISSUE_BODY" | sed -n '/^### YouTube handle/{n;n;p;q}' | tr -d '[:space:]')
+          set +e
+          bun scripts/add-channel.ts "$handle" > result.txt 2>&1
+          code=$?
+          set -e
+          cat result.txt
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+      - if: steps.add.outputs.code == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          if ! git diff --quiet catalog/channels.json; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -am "chore(catalog): $(cat result.txt)" -m "Closes #$ISSUE"
+            git push
+            # Pushes made with GITHUB_TOKEN don't trigger workflows; dispatch explicitly.
+            gh workflow run catalog.yml --ref main
+          fi
+          gh issue close "$ISSUE" --comment "$(cat result.txt) The TV will pick it up on its next sync (enable it under Parent → Channels)."
+
+      - if: steps.add.outputs.code != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: gh issue comment "$ISSUE" --body "$(cat result.txt)"

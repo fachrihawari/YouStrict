@@ -10,15 +10,6 @@ export function formatDuration(seconds: number): string {
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function formatViewCount(views: number): string {
-  if (views >= 1000000) {
-    return `${(views / 1000000).toFixed(1)}M views`;
-  } else if (views >= 1000) {
-    return `${(views / 1000).toFixed(1)}K views`;
-  }
-  return `${views} views`;
-}
-
 export function formatRelativeTime(timestamp: number): string {
   const now = Date.now();
   const date = new Date(timestamp * 1000);
