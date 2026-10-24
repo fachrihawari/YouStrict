@@ -5,6 +5,7 @@ import { db } from '@/db';
 import migrations from '@/drizzle/migrations';
 import { hasCachedCatalog, syncCatalog } from '@/lib/catalog';
 import { getSetting } from '@/lib/settings';
+import { pruneHistory } from '@/lib/history';
 
 const RESYNC_AFTER_MS = 6 * 60 * 60 * 1000;
 
@@ -20,6 +21,7 @@ export function useDatabaseInit(): DataState {
   const [state, setState] = useState<DataState>({ status: 'loading' });
 
   const start = useCallback(async () => {
+    pruneHistory();
     if (hasCachedCatalog()) {
       setState({ status: 'ready' });
       syncCatalog();

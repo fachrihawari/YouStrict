@@ -23,24 +23,20 @@
           "backgroundColor": "#FFFFFF",
           "image": "./assets/images/icon-1920x720.png"
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "android": {
-      "edgeToEdgeEnabled": true,
       "icon": "./assets/images/icon-1024x1024.png",
-      "splash": {
-        "image": "./assets/images/icon-1920x720.png"
-      },
       "package": "com.fachrihawari.YouStrict",
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
-    "newArchEnabled": true,
     "name": "YouStrict",
     "scheme": "youstrict",
     "slug": "YouStrict",
@@ -51,6 +47,12 @@
       },
       "catalogUrl": "https://fachrihawari.github.io/YouStrict/catalog/index.json"
     },
-    "owner": "hawari"
+    "owner": "hawari",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/66ba3101-5508-4afb-aad6-2274a5f08683"
+    }
   }
 }

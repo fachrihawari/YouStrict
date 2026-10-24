@@ -5,6 +5,8 @@ import { PlayerState, YoutubeView, useYouTubeEvent, useYouTubePlayer } from 'rea
 import FocusButton from '@/components/focus-button';
 import SessionTimer from '@/components/session-timer';
 import { getNextVideo } from '@/hooks/use-videos';
+import { useWatchRecorder } from '@/hooks/use-watch-recorder';
+import { useSession } from '@/contexts/session-context';
 
 const OVERLAY_HIDE_MS = 4000;
 const SEEK_SECONDS = 10;
@@ -16,6 +18,7 @@ export default function PlayerPage() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('playing');
   const [paused, setPaused] = useState(false);
+  const [playing, setPlaying] = useState(false); // actually playing: not loading, buffering or paused
   const [overlay, setOverlay] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -37,7 +40,23 @@ export default function PlayerPage() {
     return () => clearTimeout(hideTimer.current);
   }, [showOverlay]);
 
+  useWatchRecorder(id, playing);
+
+  // Tell the session when this video will end, so it can finish if time runs
+  // out mid-video. Anything but playing (pause, end, leaving) reports null.
+  const { reportPlayback, graceUntil } = useSession();
+  useYouTubeEvent(player, 'progress', (progress) => {
+    if (playing && progress.duration > 0) {
+      reportPlayback(Date.now() + Math.max(0, progress.duration - progress.currentTime) * 1000);
+    }
+  }, [playing, reportPlayback]);
+  useEffect(() => {
+    if (!playing) reportPlayback(null);
+  }, [playing, reportPlayback]);
+  useEffect(() => () => reportPlayback(null), [reportPlayback]);
+
   useYouTubeEvent(player, 'stateChange', (state) => {
+    setPlaying(state === PlayerState.PLAYING);
     if (state === PlayerState.PLAYING) {
       setPaused(false);
       setPhase('playing');
@@ -45,7 +64,10 @@ export default function PlayerPage() {
     if (state === PlayerState.PAUSED) setPaused(true);
     if (state === PlayerState.ENDED) setPhase('ended');
   }, []);
-  useYouTubeEvent(player, 'error', () => setPhase('error'), []);
+  useYouTubeEvent(player, 'error', () => {
+    setPlaying(false);
+    setPhase('error');
+  }, []);
   useYouTubeEvent(player, 'autoplayBlocked', () => setPhase('blocked'), []);
 
   const togglePlay = () => {
@@ -60,7 +82,8 @@ export default function PlayerPage() {
     showOverlay();
   };
 
-  const next = useMemo(() => getNextVideo(id), [id]);
+  const nextVideo = useMemo(() => getNextVideo(id), [id]);
+  const next = graceUntil === null ? nextVideo : null;
   const playNext = () => {
     if (next) router.replace({ pathname: '/watch/[id]', params: { id: next.id } });
   };
@@ -79,7 +102,9 @@ export default function PlayerPage() {
     <View className='flex-1 bg-black'>
       <YoutubeView
         player={player}
-        style={{ flex: 1 }}
+        // The library defaults width to the window width read at import time (portrait),
+        // which leaves the player square after rotating to landscape.
+        style={{ flex: 1, width: '100%' }}
         webViewProps={{ focusable: false, importantForAccessibility: 'no-hide-descendants' }}
       />
 
@@ -88,7 +113,8 @@ export default function PlayerPage() {
 
       {phase === 'playing' && overlay && (
         <View className='absolute inset-0 justify-between bg-black/30' pointerEvents='box-none'>
-          <View className='flex-row items-center justify-between p-6'>
+          {/* Solid backing so YouTube's own title overlay doesn't show through our buttons. */}
+          <View className='flex-row items-center justify-between p-6 bg-black/70'>
             <ControlButton label='← Back' onPress={() => router.back()} />
             <SessionTimer />
           </View>

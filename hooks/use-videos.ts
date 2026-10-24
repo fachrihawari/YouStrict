@@ -3,13 +3,15 @@ import { and, desc, eq, gt, lt, ne, or, type SQL } from 'drizzle-orm';
 import { db } from '@/db';
 import { channels, videos } from '@/db/schema';
 import { useDbQuery } from '@/hooks/use-db-query';
+import { filterConditions } from '@/helpers/filters';
+import { getFilters } from '@/lib/settings';
 
 const PAGE_SIZE = 40;
 
 type Options = {
   channelId?: string;
-  // Kid view shows only enabled channels and non-hidden videos;
-  // the parent view of a single channel shows everything.
+  // Kid view shows only enabled channels and videos that are neither hidden nor
+  // blocked by the parent's filters; the parent view of a channel shows everything.
   includeHidden?: boolean;
 };
 
@@ -23,7 +25,9 @@ export function useVideos({ channelId, includeHidden = false }: Options = {}) {
     () => {
       const filters = [];
       if (channelId) filters.push(eq(videos.channelId, channelId));
-      if (!includeHidden) filters.push(eq(videos.hidden, false), eq(channels.enabled, true));
+      if (!includeHidden) {
+        filters.push(eq(videos.hidden, false), eq(channels.enabled, true), ...filterConditions(getFilters()));
+      }
 
       return db
         .select({
@@ -42,7 +46,7 @@ export function useVideos({ channelId, includeHidden = false }: Options = {}) {
         .limit(limit)
         .all();
     },
-    ['videos', 'channels'],
+    ['videos', 'channels', 'settings'],
     [channelId, includeHidden, limit],
   );
 
@@ -64,7 +68,12 @@ export function getNextVideo(id: string) {
   const current = db.select().from(videos).where(eq(videos.id, id)).get();
   if (!current) return null;
 
-  const visible = and(eq(videos.channelId, current.channelId), eq(videos.hidden, false), ne(videos.id, id));
+  const visible = and(
+    eq(videos.channelId, current.channelId),
+    eq(videos.hidden, false),
+    ne(videos.id, id),
+    ...filterConditions(getFilters()),
+  );
   const first = (where: SQL | undefined) => db
     .select({ id: videos.id, title: videos.title })
     .from(videos)

@@ -21,14 +21,19 @@ catalog/channels.json ──▶ GitHub Action (daily, yt-dlp) ──▶ GitHub P
   single SQLite transaction. The parent's choices (channel on/off, hidden videos) survive every sync. The app
   works offline from its cache; playback needs internet.
 - **Parent area** (PIN protected):
-  - Start a session (5–180 min).
+  - Start a session (5–180 min), optionally letting the last video finish when time runs out mid-video
+    (up to 10 extra minutes).
   - Turn channels on or off. New channels start **off**.
   - Hide individual videos.
+  - Filters: hide videos whose title contains a blocked word, or that are longer than a limit.
+  - History: what was watched over the last 30 days, grouped by day, with quick "hide video" and "turn off
+    channel" actions.
   - Request a new channel.
   - Sync status and changing the PIN.
 - **Kid area:**
   - A channel rail and a video grid (4 columns on TV, 1–3 on phone/tablet).
   - A player with its own remote-friendly controls.
+  - A banner warns at 5 minutes and 1 minute left.
   - Back can't leave the session. When time is up, the app locks until the PIN is entered.
 
 ## Adding a channel (no code, no laptop)
@@ -57,9 +62,31 @@ bun run start              # dev server (TV mode)
 
 bun run catalog:build      # build the catalog locally into dist/ (needs yt-dlp)
 bunx drizzle-kit generate  # after changing db/schema.ts
+
+bun test                   # unit tests (Bun; Expo modules are stubbed in test/setup.ts)
+bun run typecheck          # generates Expo Router's typed routes, then tsc
 ```
 
 Builds: `eas build --profile preview --platform android` (APK).
+
+### Shipping a JS fix (OTA)
+
+The preview APK checks EAS Update on launch (`expo-updates`, channel `preview`) and applies a new update on
+the next app start, so a running session is never interrupted.
+
+```bash
+bun run update             # eas update --channel preview, with EXPO_TV=1
+```
+
+`runtimeVersion` uses the `fingerprint` policy: an update only reaches builds with the same native code.
+After adding or upgrading a native module, build and install a new APK.
+
+### Tests & CI
+
+`.github/workflows/ci.yml` runs on every PR and push to `main`: typecheck, `bun test`, `expo-doctor`, and a
+check that `drizzle/` matches `db/schema.ts`. Tests sit next to the code (`*.test.ts`). `test/setup.ts`
+replaces `@/db` with an in-memory `bun:sqlite` database migrated from `./drizzle`, and replaces SecureStore,
+expo-crypto and expo-constants with in-memory stand-ins.
 
 ## Project structure
 
@@ -83,5 +110,5 @@ lib/                     catalog sync, settings
 
 ## Tech stack
 
-Expo SDK 54 · React Native TV 0.81 (`react-native-tvos`) · Expo Router 6 · Drizzle ORM + expo-sqlite ·
-uniwind 1.0.5 + Tailwind 4 · FlashList 2 · react-native-youtube-bridge · Bun · yt-dlp (CI only).
+Expo SDK 58 · React Native TV 0.88 (`react-native-tvos`) · Expo Router 58 · Drizzle ORM + expo-sqlite ·
+uniwind 1.13 + Tailwind 4 · FlashList 2 · react-native-youtube-bridge · Bun · yt-dlp (CI only).

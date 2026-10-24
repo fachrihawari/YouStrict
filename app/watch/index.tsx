@@ -20,10 +20,40 @@ function useColumns() {
 
 export default function WatchPage() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const columns = useColumns();
   const channels = useChannels({ enabledOnly: true });
   const [channelId, setChannelId] = useState<string | undefined>();
   const { videos, loadMore } = useVideos({ channelId });
+
+  // Phones don't have room for the chips next to the title: give them their own row.
+  const wide = Platform.isTV || width >= 900;
+  const channelPicker = (
+    <FlatList
+      horizontal
+      className={wide ? 'flex-1' : 'grow-0'}
+      contentContainerClassName={wide ? 'gap-2 px-2' : 'gap-2 px-4'}
+      showsHorizontalScrollIndicator={false}
+      data={[{ id: undefined, name: 'All' }, ...channels]}
+      keyExtractor={(c) => c.id ?? 'all'}
+      renderItem={({ item }) => {
+        const selected = item.id === channelId;
+        return (
+          <FocusButton
+            onPress={() => setChannelId(item.id)}
+            className={clsx('px-4 py-2 rounded-full border-2', selected ? 'bg-gray-900 border-gray-900' : 'border-gray-200')}
+            focusClassName='bg-blue-600 border-blue-600'
+          >
+            {({ focused }) => (
+              <Text className={clsx('text-base font-semibold', selected || focused ? 'text-white' : 'text-gray-800')} numberOfLines={1}>
+                {item.name}
+              </Text>
+            )}
+          </FocusButton>
+        );
+      }}
+    />
+  );
 
   // The grid is the bottom of the kid stack: Back does nothing here.
   useFocusEffect(useCallback(() => {
@@ -35,30 +65,7 @@ export default function WatchPage() {
     <View className='flex-1 bg-white' style={{ paddingTop: insets.top }}>
       <View className='flex-row items-center gap-3 px-4 pt-3'>
         <Text className='text-2xl font-extrabold text-pink-600'>YouStrict</Text>
-        <FlatList
-          horizontal
-          className='flex-1'
-          contentContainerClassName='gap-2 px-2'
-          showsHorizontalScrollIndicator={false}
-          data={[{ id: undefined, name: 'All' }, ...channels]}
-          keyExtractor={(c) => c.id ?? 'all'}
-          renderItem={({ item }) => {
-            const selected = item.id === channelId;
-            return (
-              <FocusButton
-                onPress={() => setChannelId(item.id)}
-                className={clsx('px-4 py-2 rounded-full border-2', selected ? 'bg-gray-900 border-gray-900' : 'border-gray-200')}
-                focusClassName='bg-blue-600 border-blue-600'
-              >
-                {({ focused }) => (
-                  <Text className={clsx('text-base font-semibold', selected || focused ? 'text-white' : 'text-gray-800')} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                )}
-              </FocusButton>
-            );
-          }}
-        />
+        {wide ? channelPicker : <View className='flex-1' />}
         <SessionTimer />
         <Link href='/watch/unlock' asChild>
           <FocusButton accessibilityLabel='Parent' className='w-11 h-11 rounded-full items-center justify-center border-2 border-gray-200' focusClassName='bg-blue-600 border-blue-600'>
@@ -66,6 +73,7 @@ export default function WatchPage() {
           </FocusButton>
         </Link>
       </View>
+      {!wide && <View className='pt-3'>{channelPicker}</View>}
 
       <FlashList
         key={columns}
