@@ -57,9 +57,31 @@ bun run start              # dev server (TV mode)
 
 bun run catalog:build      # build the catalog locally into dist/ (needs yt-dlp)
 bunx drizzle-kit generate  # after changing db/schema.ts
+
+bun test                   # unit tests (Bun; Expo modules are stubbed in test/setup.ts)
+bun run typecheck          # generates Expo Router's typed routes, then tsc
 ```
 
 Builds: `eas build --profile preview --platform android` (APK).
+
+### Shipping a JS fix (OTA)
+
+The preview APK checks EAS Update on launch (`expo-updates`, channel `preview`) and applies a new update on
+the next app start, so a running session is never interrupted.
+
+```bash
+bun run update             # eas update --channel preview, with EXPO_TV=1
+```
+
+`runtimeVersion` uses the `fingerprint` policy: an update only reaches builds with the same native code.
+After adding or upgrading a native module, build and install a new APK.
+
+### Tests & CI
+
+`.github/workflows/ci.yml` runs on every PR and push to `main`: typecheck, `bun test`, `expo-doctor`, and a
+check that `drizzle/` matches `db/schema.ts`. Tests sit next to the code (`*.test.ts`). `test/setup.ts`
+replaces `@/db` with an in-memory `bun:sqlite` database migrated from `./drizzle`, and replaces SecureStore,
+expo-crypto and expo-constants with in-memory stand-ins.
 
 ## Project structure
 

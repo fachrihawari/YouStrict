@@ -33,8 +33,13 @@ export async function fetchChannel(handle: string, limit?: number): Promise<Chan
     throw new Error(`yt-dlp exited with ${exitCode}: ${stderr.trim().split('\n').pop()}`);
   }
 
-  const data = JSON.parse(stdout);
-  if (typeof data.channel_id !== 'string') {
+  return parseChannel(JSON.parse(stdout), handle);
+}
+
+// Turns yt-dlp's flat-playlist JSON into catalog videos, dropping live/upcoming
+// streams, shorts-length clips, invalid entries and duplicates.
+export function parseChannel(data: any, handle: string): ChannelFetchResult {
+  if (typeof data?.channel_id !== 'string') {
     throw new Error('yt-dlp returned no channel_id');
   }
 

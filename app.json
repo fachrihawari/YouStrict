@@ -47,6 +47,12 @@
       },
       "catalogUrl": "https://fachrihawari.github.io/YouStrict/catalog/index.json"
     },
-    "owner": "hawari"
+    "owner": "hawari",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/66ba3101-5508-4afb-aad6-2274a5f08683"
+    }
   }
 }

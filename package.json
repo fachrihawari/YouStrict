@@ -9,7 +9,11 @@
     "prebuild:tv": "EXPO_TV=1 expo prebuild --clean",
     "prebuild": "expo prebuild --clean",
     "catalog:build": "bun scripts/build-catalog.ts --out dist",
-    "catalog:add": "bun scripts/add-channel.ts"
+    "catalog:add": "bun scripts/add-channel.ts",
+    "test": "bun test",
+    "typegen": "bun scripts/typegen.ts",
+    "typecheck": "bun run typegen && tsc --noEmit",
+    "update": "EXPO_TV=1 eas update --channel preview --platform android"
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.15",
@@ -28,6 +32,7 @@
     "expo-splash-screen": "~58.0.11",
     "expo-sqlite": "~58.0.14",
     "expo-status-bar": "~58.0.4",
+    "expo-updates": "~58.0.18",
     "react": "19.3.0",
     "react-native": "npm:react-native-tvos@0.88.0-0",
     "react-native-qrcode-svg": "^6.3.27",
