@@ -79,7 +79,9 @@ export default function PlayerPage() {
     <View className='flex-1 bg-black'>
       <YoutubeView
         player={player}
-        style={{ flex: 1 }}
+        // The library defaults width to the window width read at import time (portrait),
+        // which leaves the player square after rotating to landscape.
+        style={{ flex: 1, width: '100%' }}
         webViewProps={{ focusable: false, importantForAccessibility: 'no-hide-descendants' }}
       />
 
@@ -88,7 +90,8 @@ export default function PlayerPage() {
 
       {phase === 'playing' && overlay && (
         <View className='absolute inset-0 justify-between bg-black/30' pointerEvents='box-none'>
-          <View className='flex-row items-center justify-between p-6'>
+          {/* Solid backing so YouTube's own title overlay doesn't show through our buttons. */}
+          <View className='flex-row items-center justify-between p-6 bg-black/70'>
             <ControlButton label='← Back' onPress={() => router.back()} />
             <SessionTimer />
           </View>
