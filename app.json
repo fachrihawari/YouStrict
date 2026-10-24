@@ -23,16 +23,14 @@
           "backgroundColor": "#FFFFFF",
           "image": "./assets/images/icon-1920x720.png"
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "android": {
       "icon": "./assets/images/icon-1024x1024.png",
-      "splash": {
-        "image": "./assets/images/icon-1920x720.png"
-      },
       "package": "com.fachrihawari.YouStrict",
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
