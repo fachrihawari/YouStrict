@@ -21,7 +21,8 @@ catalog/channels.json ──▶ GitHub Action (daily, yt-dlp) ──▶ GitHub P
   single SQLite transaction. The parent's choices (channel on/off, hidden videos) survive every sync. The app
   works offline from its cache; playback needs internet.
 - **Parent area** (PIN protected):
-  - Start a session (5–180 min).
+  - Start a session (5–180 min), optionally letting the last video finish when time runs out mid-video
+    (up to 10 extra minutes).
   - Turn channels on or off. New channels start **off**.
   - Hide individual videos.
   - Filters: hide videos whose title contains a blocked word, or that are longer than a limit.
@@ -32,6 +33,7 @@ catalog/channels.json ──▶ GitHub Action (daily, yt-dlp) ──▶ GitHub P
 - **Kid area:**
   - A channel rail and a video grid (4 columns on TV, 1–3 on phone/tablet).
   - A player with its own remote-friendly controls.
+  - A banner warns at 5 minutes and 1 minute left.
   - Back can't leave the session. When time is up, the app locks until the PIN is entered.
 
 ## Adding a channel (no code, no laptop)

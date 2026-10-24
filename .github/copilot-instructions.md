@@ -28,6 +28,8 @@ Targets: Android TV + Android phone/tablet. No web, no Apple TV.
 - Every screen belongs to one mode from `contexts/session-context.tsx`; `app/_layout.tsx` guards them
   with `Stack.Protected`. Don't navigate imperatively between modes — change the mode.
 - Anything that ends or changes a session needs the parent PIN.
+- "Let the last video finish" grace (`graceUntil` in the session context) is in memory only and ends as soon
+  as the player reports it stopped playing (pause, end, leaving). Never persist it or let it start a new video.
 - The player must keep YouTube's own controls off and the touch shield on (no links out of the app).
 - The add-channel workflow must only act on issues from the repo owner, and must pass issue content via
   `env:`, never inline `${{ }}` in `run:`.

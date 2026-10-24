@@ -10,7 +10,7 @@ import type { VideoFilters } from '@/helpers/filters';
 import { formatWatchTime } from '@/helpers/video';
 import { secondsWatchedToday } from '@/lib/history';
 import { useDbQuery } from '@/hooks/use-db-query';
-import { getFilters, getSetting, setSetting } from '@/lib/settings';
+import { getFilters, getFinishVideoOnTimeUp, getSetting, setSetting } from '@/lib/settings';
 
 const PRESETS = [15, 30, 60];
 const MIN = 5;
@@ -23,6 +23,7 @@ export default function ParentHome() {
   const enabledCount = channels.filter((c) => c.enabled).length;
   const filters = useDbQuery(getFilters, ['settings'], []);
   const watchedToday = useDbQuery(() => secondsWatchedToday(), ['watch_history'], []);
+  const finishVideo = useDbQuery(getFinishVideoOnTimeUp, ['settings'], []);
   const [minutes, setMinutes] = useState(() => Number(getSetting('defaultDuration')) || 30);
 
   const endsAt = useMemo(
@@ -61,6 +62,22 @@ export default function ParentHome() {
         </View>
 
         <Text className='text-base text-blue-900 mb-5'>⏰ Ends at {endsAt}</Text>
+
+        <FocusButton
+          onPress={() => setSetting('finishVideoOnTimeUp', finishVideo ? '0' : '1')}
+          accessibilityRole='switch'
+          accessibilityState={{ checked: finishVideo }}
+          className='flex-row items-center gap-4 p-3 mb-5 rounded-2xl border-2 border-gray-200 bg-white'
+          focusClassName='border-blue-600 bg-blue-50'
+        >
+          <View className={clsx('w-14 h-8 rounded-full p-1', finishVideo ? 'bg-green-600 items-end' : 'bg-gray-300 items-start')}>
+            <View className='w-6 h-6 rounded-full bg-white' />
+          </View>
+          <View className='flex-1'>
+            <Text className='text-lg font-bold text-gray-900'>🎬 Let the last video finish</Text>
+            <Text className='text-sm text-gray-500'>If time runs out mid-video, it plays to the end (up to 10 more minutes).</Text>
+          </View>
+        </FocusButton>
 
         {enabledCount === 0 ? (
           <Text className='text-base text-red-600 font-semibold'>

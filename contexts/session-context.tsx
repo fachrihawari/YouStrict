@@ -1,14 +1,15 @@
-import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { AppState } from 'react-native';
 import {
   ParentalSession,
   saveSession,
   getSession,
   clearSession,
-  getRemainingSeconds,
   computeExpiresAt,
+  computeGraceUntil,
 } from '@/helpers/session';
 import { hasPin } from '@/helpers/pin';
+import { getFinishVideoOnTimeUp } from '@/lib/settings';
 
 // Every screen belongs to exactly one mode; app/_layout.tsx guards routes with
 // Stack.Protected, so there is never a "back" into another mode.
@@ -23,6 +24,11 @@ type SessionContextValue = {
   hydrated: boolean;
   mode: Mode;
   session: ParentalSession | null;
+  // Set while the last video is allowed to finish after time ran out.
+  graceUntil: number | null;
+  // The player reports when the playing video will end, or null when nothing
+  // is playing (paused, ended, left). Null during grace ends it immediately.
+  reportPlayback: (playingUntil: number | null) => void;
   unlock: () => Promise<void>;
   lock: () => void;
   startSession: (durationMinutes: number) => Promise<void>;
@@ -36,6 +42,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [parentUnlocked, setParentUnlocked] = useState(false);
   const [session, setSession] = useState<ParentalSession | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [graceUntil, setGraceUntil] = useState<number | null>(null);
+  const playingUntil = useRef<number | null>(null);
+  const inGrace = useRef(false);
+  inGrace.current = graceUntil !== null;
 
   useEffect(() => {
     Promise.all([getSession(), hasPin()]).then(([s, p]) => {
@@ -46,15 +56,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const remainingSeconds = getRemainingSeconds(session, now);
-  const watching = session !== null && remainingSeconds > 0;
+  const endsAt = session ? Math.max(session.expiresAt, graceUntil ?? 0) : 0;
+  const watching = session !== null && now < endsAt;
 
-  // Re-render once at expiry (the visible countdown lives in SessionTimer).
+  // Re-render once at expiry (the visible countdown lives in SessionTimer). If a
+  // video is playing at that moment, it may finish first. Grace lives only in
+  // memory: restarting the app after expiry lands on time-up.
   useEffect(() => {
     if (!watching || !session) return;
-    const id = setTimeout(() => setNow(Date.now()), session.expiresAt - Date.now() + 50);
+    const id = setTimeout(() => {
+      if (graceUntil === null) {
+        const until = computeGraceUntil(session.expiresAt, playingUntil.current, getFinishVideoOnTimeUp());
+        if (until !== null && until > Date.now()) setGraceUntil(until);
+      }
+      setNow(Date.now());
+    }, endsAt - Date.now() + 50);
     return () => clearTimeout(id);
-  }, [watching, session, now]);
+  }, [watching, session, now, endsAt, graceUntil]);
+
+  const reportPlayback = useCallback((until: number | null) => {
+    playingUntil.current = until;
+    if (until === null && inGrace.current) {
+      setGraceUntil(null);
+      setNow(Date.now());
+    }
+  }, []);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next) => {
@@ -76,6 +102,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const unlock = useCallback(async () => {
     await clearSession();
     setSession(null);
+    setGraceUntil(null);
     setPinSet(true);
     setParentUnlocked(true);
   }, []);
@@ -87,6 +114,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const next = { startedAt, durationMinutes, expiresAt: computeExpiresAt(startedAt, durationMinutes) };
     await saveSession(next);
     setNow(startedAt);
+    setGraceUntil(null);
     setSession(next);
     setParentUnlocked(false);
   }, []);
@@ -95,6 +123,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     hydrated,
     mode,
     session,
+    graceUntil,
+    reportPlayback,
     unlock,
     lock,
     startSession,

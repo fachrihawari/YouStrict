@@ -6,6 +6,7 @@ import FocusButton from '@/components/focus-button';
 import SessionTimer from '@/components/session-timer';
 import { getNextVideo } from '@/hooks/use-videos';
 import { useWatchRecorder } from '@/hooks/use-watch-recorder';
+import { useSession } from '@/contexts/session-context';
 
 const OVERLAY_HIDE_MS = 4000;
 const SEEK_SECONDS = 10;
@@ -41,6 +42,19 @@ export default function PlayerPage() {
 
   useWatchRecorder(id, playing);
 
+  // Tell the session when this video will end, so it can finish if time runs
+  // out mid-video. Anything but playing (pause, end, leaving) reports null.
+  const { reportPlayback, graceUntil } = useSession();
+  useYouTubeEvent(player, 'progress', (progress) => {
+    if (playing && progress.duration > 0) {
+      reportPlayback(Date.now() + Math.max(0, progress.duration - progress.currentTime) * 1000);
+    }
+  }, [playing, reportPlayback]);
+  useEffect(() => {
+    if (!playing) reportPlayback(null);
+  }, [playing, reportPlayback]);
+  useEffect(() => () => reportPlayback(null), [reportPlayback]);
+
   useYouTubeEvent(player, 'stateChange', (state) => {
     setPlaying(state === PlayerState.PLAYING);
     if (state === PlayerState.PLAYING) {
@@ -68,7 +82,8 @@ export default function PlayerPage() {
     showOverlay();
   };
 
-  const next = useMemo(() => getNextVideo(id), [id]);
+  const nextVideo = useMemo(() => getNextVideo(id), [id]);
+  const next = graceUntil === null ? nextVideo : null;
   const playNext = () => {
     if (next) router.replace({ pathname: '/watch/[id]', params: { id: next.id } });
   };

@@ -9,7 +9,8 @@ export type SettingKey =
   | 'lastSyncError'
   | 'defaultDuration'
   | 'blockedKeywords' // JSON string[]
-  | 'maxDurationMinutes';
+  | 'maxDurationMinutes'
+  | 'finishVideoOnTimeUp'; // '0' to turn off; on by default
 
 type Executor = Pick<typeof db, 'select' | 'insert' | 'delete'>;
 
@@ -37,4 +38,8 @@ export function setFilters({ keywords, maxDurationMinutes }: VideoFilters) {
     setSetting('blockedKeywords', keywords.length ? JSON.stringify(keywords) : null, tx);
     setSetting('maxDurationMinutes', maxDurationMinutes === null ? null : String(maxDurationMinutes), tx);
   });
+}
+
+export function getFinishVideoOnTimeUp() {
+  return getSetting('finishVideoOnTimeUp') !== '0';
 }
