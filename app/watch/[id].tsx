@@ -5,6 +5,7 @@ import { PlayerState, YoutubeView, useYouTubeEvent, useYouTubePlayer } from 'rea
 import FocusButton from '@/components/focus-button';
 import SessionTimer from '@/components/session-timer';
 import { getNextVideo } from '@/hooks/use-videos';
+import { useWatchRecorder } from '@/hooks/use-watch-recorder';
 
 const OVERLAY_HIDE_MS = 4000;
 const SEEK_SECONDS = 10;
@@ -16,6 +17,7 @@ export default function PlayerPage() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('playing');
   const [paused, setPaused] = useState(false);
+  const [playing, setPlaying] = useState(false); // actually playing: not loading, buffering or paused
   const [overlay, setOverlay] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -37,7 +39,10 @@ export default function PlayerPage() {
     return () => clearTimeout(hideTimer.current);
   }, [showOverlay]);
 
+  useWatchRecorder(id, playing);
+
   useYouTubeEvent(player, 'stateChange', (state) => {
+    setPlaying(state === PlayerState.PLAYING);
     if (state === PlayerState.PLAYING) {
       setPaused(false);
       setPhase('playing');
@@ -45,7 +50,10 @@ export default function PlayerPage() {
     if (state === PlayerState.PAUSED) setPaused(true);
     if (state === PlayerState.ENDED) setPhase('ended');
   }, []);
-  useYouTubeEvent(player, 'error', () => setPhase('error'), []);
+  useYouTubeEvent(player, 'error', () => {
+    setPlaying(false);
+    setPhase('error');
+  }, []);
   useYouTubeEvent(player, 'autoplayBlocked', () => setPhase('blocked'), []);
 
   const togglePlay = () => {

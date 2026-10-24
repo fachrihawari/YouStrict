@@ -7,6 +7,8 @@ import { useSession } from '@/contexts/session-context';
 import { useChannels } from '@/hooks/use-channels';
 import { computeExpiresAt } from '@/helpers/session';
 import type { VideoFilters } from '@/helpers/filters';
+import { formatWatchTime } from '@/helpers/video';
+import { secondsWatchedToday } from '@/lib/history';
 import { useDbQuery } from '@/hooks/use-db-query';
 import { getFilters, getSetting, setSetting } from '@/lib/settings';
 
@@ -20,6 +22,7 @@ export default function ParentHome() {
   const channels = useChannels();
   const enabledCount = channels.filter((c) => c.enabled).length;
   const filters = useDbQuery(getFilters, ['settings'], []);
+  const watchedToday = useDbQuery(() => secondsWatchedToday(), ['watch_history'], []);
   const [minutes, setMinutes] = useState(() => Number(getSetting('defaultDuration')) || 30);
 
   const endsAt = useMemo(
@@ -72,6 +75,7 @@ export default function ParentHome() {
 
       <View className='gap-4 md:w-80'>
         <NavCard href='/parent/channels' title='📺 Channels' subtitle={`${enabledCount} of ${channels.length} turned on`} preferred={enabledCount === 0} />
+        <NavCard href='/parent/history' title='🕘 History' subtitle={watchedToday > 0 ? `${formatWatchTime(watchedToday)} watched today` : 'Nothing watched today'} />
         <NavCard href='/parent/filters' title='🚫 Filters' subtitle={filtersSummary(filters)} />
         <NavCard href='/parent/settings' title='⚙️ Settings' subtitle='Sync, PIN' />
       </View>
@@ -94,7 +98,7 @@ function filtersSummary({ keywords, maxDurationMinutes }: VideoFilters) {
   return parts.length ? parts.join(' · ') : 'Blocked words, video length';
 }
 
-function NavCard({ href, title, subtitle, preferred }: { href: '/parent/channels' | '/parent/filters' | '/parent/settings'; title: string; subtitle: string; preferred?: boolean }) {
+function NavCard({ href, title, subtitle, preferred }: { href: '/parent/channels' | '/parent/history' | '/parent/filters' | '/parent/settings'; title: string; subtitle: string; preferred?: boolean }) {
   return (
     <Link href={href} asChild>
       <FocusButton hasTVPreferredFocus={preferred} className='p-5 rounded-2xl border-2 border-gray-200 bg-white' focusClassName='border-blue-600 bg-blue-50'>

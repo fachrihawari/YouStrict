@@ -25,6 +25,8 @@ catalog/channels.json ──▶ GitHub Action (daily, yt-dlp) ──▶ GitHub P
   - Turn channels on or off. New channels start **off**.
   - Hide individual videos.
   - Filters: hide videos whose title contains a blocked word, or that are longer than a limit.
+  - History: what was watched over the last 30 days, grouped by day, with quick "hide video" and "turn off
+    channel" actions.
   - Request a new channel.
   - Sync status and changing the PIN.
 - **Kid area:**

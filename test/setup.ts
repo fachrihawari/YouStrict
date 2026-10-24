@@ -39,5 +39,5 @@ mock.module('expo-constants', () => ({ default: { expoConfig: { extra: { catalog
 
 // Empties every table, children first. Call in beforeEach of DB tests.
 export function resetDb() {
-  sqlite.exec('DELETE FROM videos; DELETE FROM channels; DELETE FROM settings;');
+  sqlite.exec('DELETE FROM watch_history; DELETE FROM videos; DELETE FROM channels; DELETE FROM settings;');
 }

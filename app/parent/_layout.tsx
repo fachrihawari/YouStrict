@@ -22,6 +22,7 @@ export default function ParentLayout() {
       <Stack.Screen name='channel/[id]' options={{ title: 'Videos' }} />
       <Stack.Screen name='request-channel' options={{ title: 'Request a channel' }} />
       <Stack.Screen name='filters' options={{ title: 'Filters' }} />
+      <Stack.Screen name='history' options={{ title: 'History' }} />
       <Stack.Screen name='settings' options={{ title: 'Settings' }} />
     </Stack>
   );

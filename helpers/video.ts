@@ -47,3 +47,11 @@ export function formatRelativeTime(timestamp: number): string {
   const diffInYears = Math.floor(diffInDays / 365);
   return `${diffInYears} year${diffInYears === 1 ? '' : 's'} ago`;
 }
+
+// Watch time for parents: "<1 min", "42 min", "1 h 5 min".
+export function formatWatchTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 1) return '<1 min';
+  const hours = Math.floor(minutes / 60);
+  return hours > 0 ? `${hours} h ${minutes % 60} min` : `${minutes} min`;
+}

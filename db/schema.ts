@@ -34,8 +34,25 @@ export const settings = sqliteTable("settings", {
   value: text("value").notNull(),
 });
 
+// What the child watched, for the parent's History screen. Title and channel
+// name are copied (no foreign keys) so entries outlive catalog changes.
+export const watchHistory = sqliteTable("watch_history", {
+  id: int("id").primaryKey({ autoIncrement: true }),
+  videoId: text("video_id").notNull(),
+  channelId: text("channel_id").notNull(),
+  title: text("title").notNull(),
+  channelName: text("channel_name").notNull(),
+  startedAt: int("started_at").notNull(), // epoch ms
+  watchedSeconds: int("watched_seconds").notNull().default(0),
+}, (t) => [
+  index("watch_history_started_at_index").on(t.startedAt),
+]);
+
+export type WatchHistoryEntry = typeof watchHistory.$inferSelect;
+
 export const schema = {
   videos,
   channels,
   settings,
+  watchHistory,
 }
