@@ -4,8 +4,8 @@ import { useResolveClassNames } from 'uniwind';
 
 type Props = Omit<PressableProps, 'children' | 'style'> & {
   className?: string;
-  // uniwind 1.0.5 has no `focus:` variant on Pressable, so focus styles are
-  // resolved here and applied through the style callback.
+  // Focus styles are resolved here and applied through the style callback
+  // (predates uniwind's `focus:` variant, which isn't yet verified on TV).
   focusClassName?: string;
   children: ReactNode | ((state: { focused: boolean }) => ReactNode);
   ref?: Ref<ComponentRef<typeof View>>;

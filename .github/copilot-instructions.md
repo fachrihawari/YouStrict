@@ -4,8 +4,8 @@ YouStrict is a kid-safe YouTube app for Android TV (and Android phones/tablets).
 architecture. Key rules:
 
 ## Stack
-Expo SDK 54, `react-native-tvos` 0.81, Expo Router 6 (typed routes), Drizzle ORM + expo-sqlite,
-**uniwind 1.0.5** + Tailwind 4 (not NativeWind), FlashList 2, react-native-youtube-bridge, Bun.
+Expo SDK 58, `react-native-tvos` 0.88, Expo Router 58 (typed routes), Drizzle ORM + expo-sqlite,
+**uniwind 1.13** + Tailwind 4 (not NativeWind), FlashList 2, react-native-youtube-bridge, Bun.
 Targets: Android TV + Android phone/tablet. No web, no Apple TV.
 
 ## Data
@@ -28,9 +28,10 @@ Targets: Android TV + Android phone/tablet. No web, no Apple TV.
   `env:`, never inline `${{ }}` in `run:`.
 
 ## TV UI
-- uniwind 1.0.5 has no `focus:` variant on Pressable: use `components/focus-button.tsx`
+- For focusable buttons use `components/focus-button.tsx`
   (`focusClassName`) or the `style={({ focused }) => …}` pattern.
 - Every interactive element must be reachable with a D-pad; set `hasTVPreferredFocus` on the primary
   action of each screen.
-- Use `Platform.isTV` ternaries with full class strings for 10-foot sizes (no `tv:` variant in 1.0.5).
+- Use `Platform.isTV` ternaries with full class strings for 10-foot sizes (uniwind 1.13
+  added `focus:`/`tv:` variants, but they are not yet verified on device; keep the existing patterns).
 - All TV scripts need `EXPO_TV=1`.

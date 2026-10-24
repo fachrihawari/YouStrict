@@ -83,5 +83,5 @@ lib/                     catalog sync, settings
 
 ## Tech stack
 
-Expo SDK 54 · React Native TV 0.81 (`react-native-tvos`) · Expo Router 6 · Drizzle ORM + expo-sqlite ·
-uniwind 1.0.5 + Tailwind 4 · FlashList 2 · react-native-youtube-bridge · Bun · yt-dlp (CI only).
+Expo SDK 58 · React Native TV 0.88 (`react-native-tvos`) · Expo Router 58 · Drizzle ORM + expo-sqlite ·
+uniwind 1.13 + Tailwind 4 · FlashList 2 · react-native-youtube-bridge · Bun · yt-dlp (CI only).
