@@ -28,6 +28,8 @@ async function runSync(): Promise<SyncResult> {
   try {
     const index = await fetchJson(CATALOG_URL);
     if (!isValidIndex(index)) throw new Error('Catalog index has an unexpected format');
+    // An empty index would orphan-delete the whole cache; the publisher never emits one.
+    if (index.channels.length === 0) throw new Error('Catalog index contains no channels');
 
     if (index.version === getSetting('catalogVersion')) {
       setSetting('lastSyncAt', new Date().toISOString());
@@ -37,21 +39,54 @@ async function runSync(): Promise<SyncResult> {
 
     const stored = new Map(db.select({ id: channels.id, hash: channels.hash }).from(channels).all().map((c) => [c.id, c.hash]));
     const changed = index.channels.filter((c) => stored.get(c.id) !== c.hash);
-    const files = await Promise.all(changed.map((c) => fetchChannelFile(c.file)));
+    // Settle per file so one broken channel can't block every other one.
+    const settled = await Promise.allSettled(changed.map((c) => fetchChannelFile(c.file)));
+    const files: CatalogChannelFile[] = [];
+    let failed = 0;
+    let firstReason = '';
+    for (const result of settled) {
+      if (result.status === 'fulfilled') {
+        files.push(result.value);
+      } else {
+        failed++;
+        if (!firstReason) firstReason = result.reason instanceof Error ? result.reason.message : String(result.reason);
+      }
+    }
+    if (changed.length > 0 && failed === changed.length) {
+      throw (settled.find((r) => r.status === 'rejected') as PromiseRejectedResult).reason;
+    }
 
-    applyCatalog(index, files);
+    // Channels that actually downloaded this round. Their metadata may advance;
+    // the rest keep their stored hash so the next sync retries them.
+    const appliedIds = new Set(files.map((f) => f.id));
+    applyCatalog(index, files, appliedIds, failed === 0);
     const total = index.channels.reduce((n, c) => n + c.videoCount, 0);
+    if (failed > 0) {
+      // applyCatalog cleared lastSyncError; surface the warning in Parent → Settings.
+      setSetting('lastSyncError', `Partial sync: ${failed} of ${changed.length} channels failed: ${firstReason}`);
+    }
     return { status: 'updated', channels: index.channels.length, videos: total };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     setSetting('lastSyncError', message);
+    // Record the attempt even when it failed, so Settings and the foreground
+    // retry don't fall back to a stale "last checked" time.
+    setSetting('lastSyncAt', new Date().toISOString());
     return { status: 'error', message };
   }
 }
 
-function applyCatalog(index: CatalogIndex, files: CatalogChannelFile[]) {
+function applyCatalog(
+  index: CatalogIndex,
+  files: CatalogChannelFile[],
+  appliedIds: Set<string>,
+  fullSuccess: boolean
+) {
   db.transaction((tx) => {
     index.channels.forEach((c, sortOrder) => {
+      // A channel whose file failed keeps its old hash/videoCount/sortOrder, so
+      // the version check retries it next sync; a brand-new one stays absent.
+      if (!appliedIds.has(c.id)) return;
       // New channels start disabled: a parent approves them in Parent → Channels.
       tx.insert(channels)
         .values({ id: c.id, handle: c.handle, name: c.name, videoCount: c.videoCount, hash: c.hash, sortOrder })
@@ -86,7 +121,9 @@ function applyCatalog(index: CatalogIndex, files: CatalogChannelFile[]) {
     const keep = index.channels.map((c) => c.id);
     tx.delete(channels).where(notInArray(channels.id, keep)).run(); // videos cascade
 
-    setSetting('catalogVersion', index.version, tx);
+    // A partial sync must leave the old version in place, otherwise the failed
+    // channels look up to date and are never retried.
+    if (fullSuccess) setSetting('catalogVersion', index.version, tx);
     setSetting('lastSyncAt', new Date().toISOString(), tx);
     setSetting('lastSyncError', null, tx);
   });
@@ -105,6 +142,9 @@ async function fetchChannelFile(file: string): Promise<CatalogChannelFile> {
     seen.add(v.id);
     return true;
   });
+  // A file with no usable videos is treated as failed, so the existing rows
+  // stay put instead of the channel being wiped.
+  if (valid.length === 0) throw new Error(`Catalog file ${file} has no valid videos`);
   return { ...data, videos: valid };
 }
 
