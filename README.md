@@ -9,7 +9,7 @@ out to YouTube.
 ```
 catalog/channels.json ──▶ GitHub Action (daily, yt-dlp) ──▶ GitHub Pages: catalog/index.json
                                                                      │
-                     TV app ◀── syncs on launch / every 6 h ◀────────┘
+                     TV app ◀── syncs on launch / on foreground after 6 h ◀────────┘
                        │
          PIN gate ─▶ Parent area ─▶ Watch (grid + player) ─▶ Time's up ─▶ PIN gate
 ```
@@ -17,6 +17,7 @@ catalog/channels.json ──▶ GitHub Action (daily, yt-dlp) ──▶ GitHub P
 - **Catalog pipeline.** `.github/workflows/catalog.yml` runs `scripts/build-catalog.ts` every day at 03:00 WIB.
   It makes one `yt-dlp` call per channel and publishes `index.json` plus one JSON file per channel to GitHub
   Pages. If a channel fails, its previous data is kept, and an empty catalog is never published.
+  The Pages site root serves a human status page; the TV app consumes `catalog/index.json`.
 - **App sync** (`lib/catalog.ts`). The app downloads only the channels whose hash changed and writes them in a
   single SQLite transaction. The parent's choices (channel on/off, hidden videos) survive every sync. The app
   works offline from its cache; playback needs internet.
@@ -49,7 +50,8 @@ You can also run `bun run catalog:add <handle>` and push, or edit `catalog/chann
 ### One-time GitHub setup
 
 - **Settings → Pages → Source:** GitHub Actions
-- **Settings → Actions → General → Workflow permissions:** Read and write
+- **Settings → Actions → General → Workflow permissions:** Read and write (`contents:write` is required
+  only by the add-channel workflow; the catalog job uses `contents:read, pages:write, id-token:write`).
 - Run **Actions → Publish catalog → Run workflow** once to publish the first catalog.
 
 ## Development
@@ -71,8 +73,9 @@ Builds: `eas build --profile preview --platform android` (APK).
 
 ### Shipping a JS fix (OTA)
 
-The preview APK checks EAS Update on launch (`expo-updates`, channel `preview`) and applies a new update on
-the next app start, so a running session is never interrupted.
+JS updates ride on `expo-updates` config: channel `preview` (`eas.json`) with the `fingerprint`
+`runtimeVersion` policy (`app.json`). A published update applies on the next app start, so a running session
+is never interrupted.
 
 ```bash
 bun run update             # eas update --channel preview, with EXPO_TV=1
@@ -84,9 +87,11 @@ After adding or upgrading a native module, build and install a new APK.
 ### Tests & CI
 
 `.github/workflows/ci.yml` runs on every PR and push to `main`: typecheck, `bun test`, `expo-doctor`, and a
-check that `drizzle/` matches `db/schema.ts`. Tests sit next to the code (`*.test.ts`). `test/setup.ts`
-replaces `@/db` with an in-memory `bun:sqlite` database migrated from `./drizzle`, and replaces SecureStore,
-expo-crypto and expo-constants with in-memory stand-ins.
+check that `drizzle/` matches `db/schema.ts`. Pushes to `main` skip CI for channel-only changes
+(`paths-ignore: catalog/channels.json`). Tests sit next to the code (`*.test.ts`). `test/setup.ts`
+replaces `@/db` with an in-memory `bun:sqlite` database migrated from `./drizzle`, replaces SecureStore,
+expo-crypto and expo-constants with in-memory stand-ins, and stubs the expo-sqlite change listener with a
+no-op.
 
 ## Project structure
 
@@ -99,13 +104,13 @@ app/
 catalog/
   channels.json          Channel list (source of truth for the pipeline)
   schema.ts              Catalog types + validators shared by the scripts and the app
-scripts/                 build-catalog.ts, add-channel.ts, yt.ts (yt-dlp wrapper)
-components/              focus-button, pin-pad, video-card, session-timer
+scripts/                 build-catalog.ts, add-channel.ts, typegen.ts, yt.ts (yt-dlp wrapper)
+components/              focus-button, pin-pad, video-card, session-timer, time-warning
 contexts/session-context App mode + watch session (SecureStore)
 db/, drizzle/            Drizzle schema + migrations (local cache of the catalog)
-helpers/                 pin (salted SHA-256 + lockout), session, formatting
-hooks/                   use-database-init, use-db-query, use-videos, use-channels
-lib/                     catalog sync, settings
+helpers/                 pin (salted SHA-256 + lockout), session, filters, video
+hooks/                   use-database-init, use-db-query, use-videos, use-channels, use-now, use-watch-recorder
+lib/                     catalog sync, settings, history
 ```
 
 ## Tech stack
