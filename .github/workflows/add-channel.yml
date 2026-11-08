@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: main
       - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-python@v7
         with:
@@ -34,7 +36,7 @@ jobs:
           # Never interpolate issue content directly into the script.
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
-          handle=$(printf '%s\n' "$ISSUE_BODY" | sed -n '/^### YouTube handle/{n;n;p;q}' | tr -d '[:space:]')
+          handle=$(printf '%s\n' "$ISSUE_BODY" | awk '/^### YouTube handle/{f=1;next} f && /[^[:space:]]/{print;exit}' | tr -d '[:space:]')
           set +e
           bun scripts/add-channel.ts "$handle" > result.txt 2>&1
           code=$?
@@ -51,7 +53,7 @@ jobs:
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git commit -am "chore(catalog): $(cat result.txt)" -m "Closes #$ISSUE"
-            git push
+            git push origin HEAD:main
             # Pushes made with GITHUB_TOKEN don't trigger workflows; dispatch explicitly.
             gh workflow run catalog.yml --ref main
           fi
@@ -62,3 +64,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE: ${{ github.event.issue.number }}
         run: gh issue comment "$ISSUE" --body "$(cat result.txt)"
+
+      - if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: gh issue comment "$ISSUE" --body "Add-channel automation failed after validation (push or dispatch step). A maintainer should check the failed run log."
