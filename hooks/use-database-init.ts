@@ -51,7 +51,8 @@ export function useDatabaseInit(): DataState {
   }, [success]);
 
   if (migrationError) {
-    return { status: 'error', message: `Database error: ${migrationError.message}`, retry: () => {} };
+    // Best-effort re-run; useMigrations owns redriving after a failure.
+    return { status: 'error', message: `Database error: ${migrationError.message}`, retry: start };
   }
   return state;
 }
