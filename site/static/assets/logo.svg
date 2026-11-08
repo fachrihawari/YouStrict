@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72" fill="none" role="img" aria-label="YouStrict">
+  <defs>
+    <linearGradient id="shield" x1="8" y1="4" x2="56" y2="68" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e57aa6"/>
+      <stop offset="1" stop-color="#c8477f"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 2.5 6.5 11.7v20.1c0 15.8 10.8 26.8 25.5 32.7 14.7-5.9 25.5-16.9 25.5-32.7V11.7L32 2.5Z" fill="url(#shield)"/>
+  <path d="M25.4 23.9c0-1.8 1.9-2.9 3.4-2l18.2 10.5c1.5.9 1.5 3.1 0 4L28.8 46.9c-1.5.9-3.4-.2-3.4-2V23.9Z" fill="#fff"/>
+</svg>

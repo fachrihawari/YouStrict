@@ -8,6 +8,7 @@ import { mkdir } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import type { CatalogChannel, CatalogChannelFile, CatalogIndex, CatalogVideo, ChannelConfig } from '../catalog/schema';
 import { HANDLE_PATTERN, isValidIndex, isValidVideo } from '../catalog/schema';
+import { publishSite } from './publish-site';
 import { fetchChannel, withRetry } from './yt';
 
 const DEFAULT_LIMIT = 200;
@@ -98,26 +99,15 @@ const index: CatalogIndex = {
 await Bun.write(`${outDir}/index.json`, JSON.stringify(index, null, 2));
 
 const total = channels.reduce((n, c) => n + c.videoCount, 0);
-const escapeHtml = (value: string) => value.replace(/[&<>\"]/g, (char) => ({
-  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
-})[char]!);
-const rows = channels.map((c) => `
-      <tr><td>${escapeHtml(c.name)}</td><td>@${escapeHtml(c.handle)}</td><td>${c.videoCount}</td>
-      <td><a href="catalog/${escapeHtml(c.file)}">JSON</a></td></tr>`).join('');
-await Bun.write(`${values.out}/index.html`, `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>YouStrict catalog</title><style>
-body{font:16px/1.5 system-ui,sans-serif;max-width:900px;margin:3rem auto;padding:0 1rem;color:#202a35;background:#f6f8fa}
-h1{margin-bottom:.25rem} .muted{color:#596675} table{width:100%;border-collapse:collapse;background:white;margin-top:1.5rem}
-th,td{text-align:left;padding:.7rem;border-bottom:1px solid #dce2e8} th{background:#eaf0f5}
-a{color:#075fbd} code{overflow-wrap:anywhere}
-</style></head><body><h1>YouStrict catalog</h1>
-<p class="muted">Generated ${escapeHtml(index.generatedAt)} · version <code>${index.version.slice(0, 12)}</code></p>
-<p>${channels.length} channels · ${total} videos</p>
-<p><a href="catalog/index.json">Catalog index JSON</a></p>
-<table><thead><tr><th>Channel</th><th>Handle</th><th>Videos</th><th>Data</th></tr></thead><tbody>${rows}
-  </tbody></table><p class="muted">The TV app syncs <code>catalog/index.json</code>; this page is informational.</p>
-</body></html>`);
+
+// The landing pages are rendered from the same catalog as index.json, so the
+// numbers on the site can never lag behind the data the app consumes.
+await publishSite(values.out, {
+  channels: files,
+  generatedAt: index.generatedAt,
+  version: index.version,
+});
+
 console.log(`\n✅ ${channels.length} channels, ${total} videos, version ${index.version.slice(0, 12)} (${failures} failures)`);
 
 function sha256(input: string) {
