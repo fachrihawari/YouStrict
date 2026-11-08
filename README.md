@@ -17,7 +17,8 @@ catalog/channels.json ──▶ GitHub Action (daily, yt-dlp) ──▶ GitHub P
 - **Catalog pipeline.** `.github/workflows/catalog.yml` runs `scripts/build-catalog.ts` every day at 03:00 WIB.
   It makes one `yt-dlp` call per channel and publishes `index.json` plus one JSON file per channel to GitHub
   Pages. If a channel fails, its previous data is kept, and an empty catalog is never published.
-  The Pages site root serves a human status page; the TV app consumes `catalog/index.json`.
+  The Pages site root is the landing page (see [Website](#website-github-pages)); `catalog/` is a
+  human-readable status page and the TV app consumes `catalog/index.json`.
 - **App sync** (`lib/catalog.ts`). The app downloads only the channels whose hash changed and writes them in a
   single SQLite transaction. The parent's choices (channel on/off, hidden videos) survive every sync. The app
   works offline from its cache; playback needs internet.
@@ -53,6 +54,69 @@ You can also run `bun run catalog:add <handle>` and push, or edit `catalog/chann
 - **Settings → Actions → General → Workflow permissions:** Read and write (`contents:write` is required
   only by the add-channel workflow; the catalog job uses `contents:read, pages:write, id-token:write`).
 - Run **Actions → Publish catalog → Run workflow** once to publish the first catalog.
+
+## Website (GitHub Pages)
+
+The root of `fachrihawari.github.io/YouStrict` is now a bilingual, hand-written landing page
+(Indonesian at `/`, English at `/en/`) with a language toggle, a parent-area showcase, and the real catalog
+stats baked in at build time. JavaScript is optional — the pages are static HTML.
+
+```
+site/content/id.ts            Indonesian copy
+site/content/en.ts            English copy (shared shape — a missing key is a type error)
+site/content/types.ts         shared copy shape
+site/static/styles.css        (no CSS framework, no web fonts)
+site/static/app.js            tiny header/scroll/script behaviour
+site/assets-src/              source SVGs for logo, favicons and OG images, rasterised at build time
+scripts/landing.ts            typed renderer: escaping, relative asset paths, canonical/OG URLs, JSON-LD
+scripts/preview-landing.ts    load the published catalog and serve .site-preview/ locally
+scripts/landing.test.ts       tests (content shape, escaping, asset existence, sitemap)
+scripts/publish-site.ts       shared "copy site/static + write every static file" glue
+```
+
+- **Where the site lives.** `.github/workflows/catalog.yml` builds `dist/` from `site/**` and `catalog/**` and
+  deploys it to Pages. The landing numbers come from the same run that publishes `catalog/index.json`, so they
+  can never drift apart. Any change that touches `site/**` must be committed to `main` and kick off a catalog
+  build (the `site/**` path trigger).
+- **Bilingual.** `/index.html` is Indonesian and is the canonical URL. `/en/index.html` is English, linked via
+  `hreflang="en"`. The footer and the header both carry a language toggle.
+- **Screenshots.** Drop real app screenshots into `site/static/assets/shots/`:
+  `timer.png`, `channels.png`, `history.png` (png, webp or jpg). The landing reads them if they exist; there is
+  a compact CSS mockup as a fallback until real screenshots arrive. Capturing them needs a device or an
+  Android TV emulator (see the [Development](#development) commands).
+- **Preview locally.** `bun run site:preview` loads the published `catalog/index.json`, copies `site/static/`,
+  writes the HTML pages, and serves them on port 4173. Output goes to `.site-preview/` in `.gitignore`.
+- **OG images.** `site/assets-src/og-id.svg` and `og-en.svg` are the sources for the committed
+  `site/static/assets/og-*.png` (1200×630); regenerate them with
+  `rsvg-convert -w 1200 -h 630 site/assets-src/og-id.svg -o site/static/assets/og-id.png` after editing the copy.
+
+## Build & release (APK)
+
+```bash
+# Same dev commands as before (see Development below).
+bun run catalog:build      # builds the catalog into dist/ (needs yt-dlp)
+bun run site:preview       # preview the landing with the published catalog
+```
+
+A signed APK is built on EAS with the `release` profile and attached to the latest GitHub Release, so the
+**Download APK** button on the landing page always points to a real file. The profile **does not** use
+`withoutCredentials`, so the first build needs a keystore. One-time setup:
+
+1. `Settings → Secrets → actions → New repository secret → EXPO_TOKEN` (an Expo access token, see Expo docs).
+2. One interactive local build or `eas credentials --platform android` to create/upload the keystore, then stop.
+   Local `eas build --profile release --platform android` also works and prints the download URL; you can then
+   delete the build.
+
+After that, a new APK is made by:
+
+- pushing a tag like `v1.0.0` (triggers `.github/workflows/release-apk.yml`), or
+- running the workflow manually from the Actions tab (`workflow_dispatch`).
+
+The release workflow reuses an existing release: a rerun that yields the same build number uploads the APK to
+that release instead of creating a second one.
+
+`bun run update` (OTA, channel `preview`) is unaffected — the release profile uses the same channel and
+fingerprint policy, so updates still apply to release-signed APKs.
 
 ## Development
 
@@ -104,7 +168,9 @@ app/
 catalog/
   channels.json          Channel list (source of truth for the pipeline)
   schema.ts              Catalog types + validators shared by the scripts and the app
-scripts/                 build-catalog.ts, add-channel.ts, typegen.ts, yt.ts (yt-dlp wrapper)
+scripts/                 build-catalog.ts, landing.ts, publish-site.ts, preview-landing.ts,
+                         add-channel.ts, typegen.ts, yt.ts (yt-dlp wrapper)
+site/                    Landing page (content/, static/, assets-src/) rendered into dist/
 components/              focus-button, pin-pad, video-card, session-timer, time-warning
 contexts/session-context App mode + watch session (SecureStore)
 db/, drizzle/            Drizzle schema + migrations (local cache of the catalog)

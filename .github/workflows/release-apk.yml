@@ -1,0 +1,88 @@
+name: Release APK
+
+# Builds a signed APK on EAS and attaches it to a GitHub Release, so the
+# download button on the landing page (releases/latest) always has a file.
+#
+# One-time setup:
+#   - add an EXPO_TOKEN secret (expo.dev -> Access tokens)
+#   - `eas credentials --platform android` once, to create/upload the keystore.
+#     `--non-interactive` cannot answer the "generate a keystore?" prompt.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-apk
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+
+      - name: Build the APK on EAS
+        run: |
+          set -o pipefail
+          bunx eas-cli@latest build \
+            --platform android \
+            --profile release \
+            --non-interactive \
+            --wait \
+            --json > build.json
+          cat build.json
+
+      - name: Read version info
+        id: meta
+        run: |
+          build() { jq -r "if type == \"array\" then .[0] else . end | $1 // empty" build.json; }
+          {
+            echo "id=$(build .id)"
+            echo "version=$(build .appVersion)"
+            echo "number=$(build .appBuildVersion)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download the APK
+        run: |
+          bunx eas-cli@latest build:download \
+            --build-id "${{ steps.meta.outputs.id }}" \
+            --non-interactive
+          apk=$(find . -maxdepth 1 -name '*.apk' -print -quit)
+          if [ -z "$apk" ]; then
+            echo "::error::EAS did not produce an APK artifact."
+            exit 1
+          fi
+          echo "APK=$apk" >> "$GITHUB_ENV"
+          ls -lh "$apk"
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ steps.meta.outputs.version }}"
+          number="${{ steps.meta.outputs.number }}"
+          version="${version:-0.0.0}"
+          tag="v${version}-build${number:-${{ github.run_number }}}"
+          name="YouStrict ${version}${number:+ (build $number)}"
+          asset="youstrict-${version}-${number:-${{ github.run_number }}}.apk"
+          cp "$APK" "$asset"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$asset" --clobber
+          else
+            gh release create "$tag" "$asset" \
+              --target "$GITHUB_SHA" \
+              --title "$name" \
+              --notes "Signed Android APK for Android TV, phones and tablets. Check the README for install steps." \
+              --generate-notes \
+              --latest
+          fi

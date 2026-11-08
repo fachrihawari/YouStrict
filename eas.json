@@ -15,6 +15,17 @@
       },
       "distribution": "internal",
       "channel": "preview"
+    },
+    "release": {
+      "android": {
+        "buildType": "apk"
+      },
+      "autoIncrement": true,
+      "env": {
+        "EXPO_TV": "1"
+      },
+      "distribution": "internal",
+      "channel": "preview"
     }
   }
 }

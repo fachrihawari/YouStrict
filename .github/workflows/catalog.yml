@@ -9,6 +9,9 @@ on:
     paths:
       - catalog/**
       - scripts/**
+      # The landing page is rendered by the same build, so a copy or CSS change
+      # has to republish the catalog too (deploy-pages replaces the whole site).
+      - site/**
 
 permissions:
   contents: read

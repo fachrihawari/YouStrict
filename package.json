@@ -9,6 +9,7 @@
     "prebuild:tv": "EXPO_TV=1 expo prebuild --clean",
     "prebuild": "expo prebuild --clean",
     "catalog:build": "bun scripts/build-catalog.ts --out dist",
+    "site:preview": "bun scripts/preview-landing.ts",
     "catalog:add": "bun scripts/add-channel.ts",
     "test": "bun test",
     "typegen": "bun scripts/typegen.ts",

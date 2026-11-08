@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8f6"/>
+      <stop offset="0.58" stop-color="#fff1ec"/>
+      <stop offset="1" stop-color="#ffe4ef"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(1060 80) rotate(125) scale(520 420)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffc9e1" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffc9e1" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shield" x1="72" y1="48" x2="132" y2="140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e57aa6"/>
+      <stop offset="1" stop-color="#c8477f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <g transform="translate(72 60) scale(1.25)">
+    <path d="M32 2.5 6.5 11.7v20.1c0 15.8 10.8 26.8 25.5 32.7 14.7-5.9 25.5-16.9 25.5-32.7V11.7L32 2.5Z" fill="url(#shield)"/>
+    <path d="M25.4 23.9c0-1.8 1.9-2.9 3.4-2l18.2 10.5c1.5.9 1.5 3.1 0 4L28.8 46.9c-1.5.9-3.4-.2-3.4-2V23.9Z" fill="#fff"/>
+  </g>
+  <text x="170" y="112" font-family="Adwaita Sans, Liberation Sans, sans-serif" font-size="40" font-weight="700" letter-spacing="-1.2" fill="#241a20">YouStrict</text>
+
+  <text font-family="Adwaita Sans, Liberation Sans, sans-serif" font-size="78" font-weight="700" letter-spacing="-3" fill="#241a20">
+    <tspan x="72" y="300">YouTube for kids,</tspan>
+  </text>
+  <text font-family="Adwaita Sans, Liberation Sans, sans-serif" font-size="78" font-weight="700" letter-spacing="-3" fill="#bd4a80">
+    <tspan x="72" y="388">without the algorithm.</tspan>
+  </text>
+
+  <text x="74" y="458" font-family="Adwaita Sans, Liberation Sans, sans-serif" font-size="27" font-weight="400" fill="#5f5560">Only channels you approve. Only as long as you allow.</text>
+
+  <g font-family="Adwaita Sans, Liberation Sans, sans-serif" font-size="19" font-weight="700">
+    <rect x="72" y="506" width="158" height="46" rx="23" fill="#241a20"/>
+    <text x="151" y="536" text-anchor="middle" fill="#fff8f6">Android TV</text>
+    <rect x="244" y="506" width="152" height="46" rx="23" fill="#fff" stroke="#f2dcd6"/>
+    <text x="320" y="536" text-anchor="middle" fill="#8c2f5d">No search</text>
+    <rect x="410" y="506" width="160" height="46" rx="23" fill="#fff" stroke="#f2dcd6"/>
+    <text x="490" y="536" text-anchor="middle" fill="#8c2f5d">Time limit</text>
+  </g>
+
+  <text x="1128" y="590" text-anchor="end" font-family="Adwaita Sans, Liberation Sans, sans-serif" font-size="19" font-weight="600" fill="#8a7f88">fachrihawari.github.io/YouStrict</text>
+</svg>
