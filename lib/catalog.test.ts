@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { CATALOG_URL, db, resetDb } from '@/test/setup';
 import { channels, videos } from '@/db/schema';
-import { getSetting } from '@/lib/settings';
+import { getSetting, setSetting } from '@/lib/settings';
 import { setChannelEnabled, setVideoHidden, syncCatalog } from '@/lib/catalog';
 import type { CatalogChannelFile, CatalogIndex, CatalogVideo } from '@/catalog/schema';
 
@@ -43,6 +43,15 @@ function serveCatalog(version: string, files: CatalogChannelFile[]) {
 
 const channelA = (vids: CatalogVideo[]): CatalogChannelFile => ({ id: 'UC_A', handle: 'a', name: 'Channel A', videos: vids });
 const channelB = (vids: CatalogVideo[]): CatalogChannelFile => ({ id: 'UC_B', handle: 'b', name: 'Channel B', videos: vids });
+
+// Makes one channel file 404 while every other route keeps working.
+function failChannelFile(id: string) {
+  const inner = globalThis.fetch;
+  globalThis.fetch = (async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+    if (input === `${BASE}channels/${id}.json`) return new Response('missing', { status: 404 });
+    return inner(input, init);
+  }) as typeof fetch;
+}
 
 beforeEach(resetDb);
 afterEach(() => { globalThis.fetch = realFetch; });
@@ -116,12 +125,56 @@ describe('syncCatalog', () => {
   test('records errors and keeps the cached catalog', async () => {
     serveCatalog('v1', [channelA([video(1)])]);
     await syncCatalog();
+    setSetting('lastSyncAt', '2000-01-01T00:00:00.000Z');
 
     globalThis.fetch = (async () => new Response('down', { status: 503 })) as unknown as typeof fetch;
     expect(await syncCatalog()).toEqual({ status: 'error', message: 'Download failed (HTTP 503)' });
     expect(getSetting('lastSyncError')).toBe('Download failed (HTTP 503)');
     expect(getSetting('catalogVersion')).toBe('v1');
     expect(db.select().from(videos).all()).toHaveLength(1);
+    // A failed attempt still records when it happened.
+    expect(Date.parse(getSetting('lastSyncAt') ?? '')).toBeGreaterThan(Date.parse('2000-01-01T00:00:00.000Z'));
+  });
+
+  test('applies the channels that downloaded when another channel fails', async () => {
+    serveCatalog('v1', [channelA([video(1), video(2)]), channelB([video(3)])]);
+    failChannelFile('UC_B');
+
+    expect(await syncCatalog()).toEqual({ status: 'updated', channels: 2, videos: 3 });
+
+    expect(db.select().from(channels).all().map((c) => c.id)).toEqual(['UC_A', 'UC_B']);
+    expect(db.select().from(videos).all().map((v) => v.id)).toEqual([video(1).id, video(2).id]);
+    expect(getSetting('catalogVersion')).toBe('v1');
+    expect(getSetting('lastSyncError')).toBe(
+      'Partial sync: 1 of 2 channels failed: Download failed (HTTP 404)',
+    );
+  });
+
+  test('rejects an empty index without wiping the cache', async () => {
+    serveCatalog('v1', [channelA([video(1)])]);
+    await syncCatalog();
+
+    serveCatalog('v2', []);
+    expect(await syncCatalog()).toEqual({ status: 'error', message: 'Catalog index contains no channels' });
+
+    expect(getSetting('catalogVersion')).toBe('v1');
+    expect(db.select().from(channels).all()).toHaveLength(1);
+    expect(db.select().from(videos).all()).toHaveLength(1);
+  });
+
+  test('treats a channel file with no valid videos as failed', async () => {
+    serveCatalog('v1', [channelA([video(1), video(2)])]);
+    await syncCatalog();
+
+    // Every video in the new file is invalid, so nothing usable is left.
+    serveCatalog('v2', [channelA([video(3, { duration: 0 })])]);
+    expect(await syncCatalog()).toEqual({
+      status: 'error',
+      message: 'Catalog file channels/UC_A.json has no valid videos',
+    });
+
+    expect(getSetting('catalogVersion')).toBe('v1');
+    expect(db.select().from(videos).all().map((v) => v.id)).toEqual([video(1).id, video(2).id]);
   });
 
   test('rejects a malformed index without touching the cache', async () => {

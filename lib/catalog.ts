@@ -28,6 +28,8 @@ async function runSync(): Promise<SyncResult> {
   try {
     const index = await fetchJson(CATALOG_URL);
     if (!isValidIndex(index)) throw new Error('Catalog index has an unexpected format');
+    // An empty index would orphan-delete the whole cache; the publisher never emits one.
+    if (index.channels.length === 0) throw new Error('Catalog index contains no channels');
 
     if (index.version === getSetting('catalogVersion')) {
       setSetting('lastSyncAt', new Date().toISOString());
@@ -37,14 +39,36 @@ async function runSync(): Promise<SyncResult> {
 
     const stored = new Map(db.select({ id: channels.id, hash: channels.hash }).from(channels).all().map((c) => [c.id, c.hash]));
     const changed = index.channels.filter((c) => stored.get(c.id) !== c.hash);
-    const files = await Promise.all(changed.map((c) => fetchChannelFile(c.file)));
+    // Settle per file so one broken channel can't block every other one.
+    const settled = await Promise.allSettled(changed.map((c) => fetchChannelFile(c.file)));
+    const files: CatalogChannelFile[] = [];
+    let failed = 0;
+    let firstReason = '';
+    for (const result of settled) {
+      if (result.status === 'fulfilled') {
+        files.push(result.value);
+      } else {
+        failed++;
+        if (!firstReason) firstReason = result.reason instanceof Error ? result.reason.message : String(result.reason);
+      }
+    }
+    if (changed.length > 0 && failed === changed.length) {
+      throw (settled.find((r) => r.status === 'rejected') as PromiseRejectedResult).reason;
+    }
 
     applyCatalog(index, files);
     const total = index.channels.reduce((n, c) => n + c.videoCount, 0);
+    if (failed > 0) {
+      // applyCatalog cleared lastSyncError; surface the warning in Parent → Settings.
+      setSetting('lastSyncError', `Partial sync: ${failed} of ${changed.length} channels failed: ${firstReason}`);
+    }
     return { status: 'updated', channels: index.channels.length, videos: total };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     setSetting('lastSyncError', message);
+    // Record the attempt even when it failed, so Settings and the foreground
+    // retry don't fall back to a stale "last checked" time.
+    setSetting('lastSyncAt', new Date().toISOString());
     return { status: 'error', message };
   }
 }
@@ -105,6 +129,9 @@ async function fetchChannelFile(file: string): Promise<CatalogChannelFile> {
     seen.add(v.id);
     return true;
   });
+  // A file with no usable videos is treated as failed, so the existing rows
+  // stay put instead of the channel being wiped.
+  if (valid.length === 0) throw new Error(`Catalog file ${file} has no valid videos`);
   return { ...data, videos: valid };
 }
 
