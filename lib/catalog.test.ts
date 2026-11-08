@@ -142,12 +142,52 @@ describe('syncCatalog', () => {
 
     expect(await syncCatalog()).toEqual({ status: 'updated', channels: 2, videos: 3 });
 
-    expect(db.select().from(channels).all().map((c) => c.id)).toEqual(['UC_A', 'UC_B']);
+    // UC_B's file failed, so a brand-new channel is simply absent for now.
+    expect(db.select().from(channels).all().map((c) => c.id)).toEqual(['UC_A']);
     expect(db.select().from(videos).all().map((v) => v.id)).toEqual([video(1).id, video(2).id]);
-    expect(getSetting('catalogVersion')).toBe('v1');
+    // Applying UC_A does not move the version: UC_B must be retried.
+    expect(getSetting('catalogVersion')).toBeNull();
+    expect(db.select().from(channels).where(eq(channels.id, 'UC_A')).get()?.hash).toBe(
+      [video(1), video(2)].map((v) => v.id + v.title).join(','),
+    );
     expect(getSetting('lastSyncError')).toBe(
       'Partial sync: 1 of 2 channels failed: Download failed (HTTP 404)',
     );
+  });
+
+  test('retries a channel that failed on an earlier partial sync', async () => {
+    serveCatalog('v1', [channelA([video(1)]), channelB([video(2)])]);
+    await syncCatalog();
+    const bHashV1 = [video(2)].map((v) => v.id + v.title).join(',');
+
+    // v2: UC_B's file fails while UC_A applies, so this is a partial sync.
+    serveCatalog('v2', [channelA([video(1), video(4)]), channelB([video(2), video(3)])]);
+    failChannelFile('UC_B');
+    expect((await syncCatalog()).status).toBe('updated');
+
+    // The version must stay at v1 and UC_B must keep its v1 hash and videos.
+    expect(getSetting('catalogVersion')).toBe('v1');
+    const failed = db.select().from(channels).where(eq(channels.id, 'UC_B')).get();
+    expect(failed?.hash).toBe(bHashV1);
+    expect(failed?.videoCount).toBe(1);
+    expect(db.select().from(videos).where(eq(videos.channelId, 'UC_B')).all().map((v) => v.id)).toEqual([video(2).id]);
+    // UC_A did apply, so the retry below only has to fetch the stale channel.
+    expect(db.select().from(videos).where(eq(videos.channelId, 'UC_A')).all().map((v) => v.id)).toEqual([
+      video(1).id,
+      video(4).id,
+    ]);
+
+    // v2 again, now healthy: the failed channel is retried and the version advances.
+    const requested = serveCatalog('v2', [channelA([video(1), video(4)]), channelB([video(2), video(3)])]);
+    expect(await syncCatalog()).toEqual({ status: 'updated', channels: 2, videos: 4 });
+
+    expect(requested).toEqual([CATALOG_URL, `${BASE}channels/UC_B.json`]);
+    expect(getSetting('catalogVersion')).toBe('v2');
+    expect(getSetting('lastSyncError')).toBeNull();
+    expect(db.select().from(videos).where(eq(videos.channelId, 'UC_B')).all().map((v) => v.id)).toEqual([
+      video(2).id,
+      video(3).id,
+    ]);
   });
 
   test('rejects an empty index without wiping the cache', async () => {

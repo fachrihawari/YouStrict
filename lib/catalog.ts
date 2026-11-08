@@ -56,7 +56,10 @@ async function runSync(): Promise<SyncResult> {
       throw (settled.find((r) => r.status === 'rejected') as PromiseRejectedResult).reason;
     }
 
-    applyCatalog(index, files);
+    // Channels that actually downloaded this round. Their metadata may advance;
+    // the rest keep their stored hash so the next sync retries them.
+    const appliedIds = new Set(files.map((f) => f.id));
+    applyCatalog(index, files, appliedIds, failed === 0);
     const total = index.channels.reduce((n, c) => n + c.videoCount, 0);
     if (failed > 0) {
       // applyCatalog cleared lastSyncError; surface the warning in Parent → Settings.
@@ -73,9 +76,17 @@ async function runSync(): Promise<SyncResult> {
   }
 }
 
-function applyCatalog(index: CatalogIndex, files: CatalogChannelFile[]) {
+function applyCatalog(
+  index: CatalogIndex,
+  files: CatalogChannelFile[],
+  appliedIds: Set<string>,
+  fullSuccess: boolean
+) {
   db.transaction((tx) => {
     index.channels.forEach((c, sortOrder) => {
+      // A channel whose file failed keeps its old hash/videoCount/sortOrder, so
+      // the version check retries it next sync; a brand-new one stays absent.
+      if (!appliedIds.has(c.id)) return;
       // New channels start disabled: a parent approves them in Parent → Channels.
       tx.insert(channels)
         .values({ id: c.id, handle: c.handle, name: c.name, videoCount: c.videoCount, hash: c.hash, sortOrder })
@@ -110,7 +121,9 @@ function applyCatalog(index: CatalogIndex, files: CatalogChannelFile[]) {
     const keep = index.channels.map((c) => c.id);
     tx.delete(channels).where(notInArray(channels.id, keep)).run(); // videos cascade
 
-    setSetting('catalogVersion', index.version, tx);
+    // A partial sync must leave the old version in place, otherwise the failed
+    // channels look up to date and are never retried.
+    if (fullSuccess) setSetting('catalogVersion', index.version, tx);
     setSetting('lastSyncAt', new Date().toISOString(), tx);
     setSetting('lastSyncError', null, tx);
   });
