@@ -9,7 +9,12 @@ describe('PIN', () => {
     expect(await hasPin()).toBe(false);
     await setPin('1234');
     expect(await hasPin()).toBe(true);
-    expect([...secureStore.values()].join()).not.toContain('1234');
+    // Parse the stored payload: the PIN must not appear as a JSON string
+    // value. A bare substring check would flake (~1/1000) when the random
+    // hex digest happens to contain '1234'.
+    const stored = JSON.parse([...secureStore.values()][0]!) as { salt: string; hash: string };
+    expect(Object.values(stored)).not.toContain('1234');
+    expect(stored.hash).toHaveLength(64);
   });
 
   test('accepts the right PIN and rejects a wrong one', async () => {
