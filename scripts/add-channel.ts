@@ -5,7 +5,7 @@
 // Run by .github/workflows/add-channel.yml when the owner opens an "add-channel" issue.
 import type { ChannelConfig } from '../catalog/schema';
 import { HANDLE_PATTERN } from '../catalog/schema';
-import { fetchChannel } from './yt';
+import { fetchChannel, withRetry } from './yt';
 
 const handle = (Bun.argv[2] ?? '').trim().replace(/^@/, '');
 if (!HANDLE_PATTERN.test(handle)) {
@@ -23,7 +23,7 @@ if (configs.some((c) => c.handle.toLowerCase() === handle.toLowerCase())) {
 
 let name: string;
 try {
-  ({ name } = await fetchChannel(handle, 1));
+  ({ name } = await withRetry(() => fetchChannel(handle, 1)));
 } catch (e) {
   console.error(`Could not find channel @${handle} on YouTube: ${(e as Error).message}`);
   process.exit(1);
