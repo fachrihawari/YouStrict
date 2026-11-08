@@ -28,6 +28,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
+
+      # Fail fast with a useful message instead of EAS CLI's "account required".
+      - name: Require EXPO_TOKEN
+        if: env.EXPO_TOKEN == ''
+        run: |
+          echo "::error::EXPO_TOKEN is not set. Add it in Settings -> Secrets and variables -> Actions, then rerun."
+          exit 1
+
       - run: bun install --frozen-lockfile
 
       - name: Build the APK on EAS
