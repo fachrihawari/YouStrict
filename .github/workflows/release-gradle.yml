@@ -63,7 +63,15 @@ jobs:
           grep -E '^android.enableMinifyInReleaseBuilds=' android/gradle.properties
           grep -E '^android.enableShrinkResourcesInReleaseBuilds=' android/gradle.properties
           test "$(grep -c "^reactNativeArchitectures=${BUILD_ARCHS}$" android/gradle.properties)" = 1
-          grep -E "^    versionCode ${VERSION_CODE}$" android/app/build.gradle
+          echo "VERSION_CODE=${VERSION_CODE}"
+          grep -nE '[[:space:]]+versionCode ' android/app/build.gradle
+          # Indentation inside the generated `android { defaultConfig { ... } }`
+          # block is not stable, so match on the value, not on the spaces.
+          grep -qE "[[:space:]]versionCode ${VERSION_CODE}[[:space:]]*$" android/app/build.gradle
+          if grep -qE '[[:space:]]versionCode 1[[:space:]]*$' android/app/build.gradle; then
+            echo "::error::versionCode is still 1; Android would refuse the update."
+            exit 1
+          fi
 
       - name: Decode the keystore
         env:
