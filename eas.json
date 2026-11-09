@@ -22,7 +22,8 @@
       },
       "autoIncrement": true,
       "env": {
-        "EXPO_TV": "1"
+        "EXPO_TV": "1",
+        "BUILD_ARCHS": "arm64-v8a,armeabi-v7a"
       },
       "distribution": "internal",
       "channel": "preview"
