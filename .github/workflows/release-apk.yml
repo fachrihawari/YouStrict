@@ -8,11 +8,13 @@ name: Release APK
 #   - add an EXPO_TOKEN secret (expo.dev -> Access tokens)
 #   - `eas credentials --platform android` once, to create/upload the keystore.
 #     `--non-interactive` cannot answer the "generate a keystore?" prompt.
+#
+# Only `workflow_dispatch` triggers the build. The release job creates its own
+# `v*` tag, so triggering on tags would start another build from that tag, and
+# the next release would bump the version again — an endless chain.
 
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
 
 permissions:
   contents: write
