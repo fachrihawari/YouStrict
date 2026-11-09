@@ -98,25 +98,41 @@ bun run catalog:build      # builds the catalog into dist/ (needs yt-dlp)
 bun run site:preview       # preview the landing with the published catalog
 ```
 
-A signed APK is built on EAS with the `release` profile and attached to the latest GitHub Release, so the
-**Download APK** button on the landing page always points to a real file. The profile **does not** use
-`withoutCredentials`, so the first build needs a keystore. One-time setup:
+Two workflows can build a release; **use the Gradle one by default**.
 
-1. `Settings → Secrets → actions → New repository secret → EXPO_TOKEN` (an Expo access token, see Expo docs).
-2. One interactive local build or `eas credentials --platform android` to create/upload the keystore, then stop.
-   Local `eas build --profile release --platform android` also works and prints the download URL; you can then
-   delete the build.
+#### Default: `Release APK (Gradle)` — no EAS quota
 
-After that, a new APK is made by running the workflow manually from the Actions tab (`workflow_dispatch`).
-It builds one APK per architecture, then creates the GitHub release and its `v*` tag itself. The workflow
-deliberately does **not** trigger on tags: its own release would start another build, and each release bumps
-the version counter, so the chain would never stop.
+Actions tab → **Release APK (Gradle)** → *Run workflow* → pick `arm64-v8a` or `armeabi-v7a`.
+It runs `expo prebuild`, verifies that `gradle.properties` got the right ABI/R8/shrink settings, decodes the
+keystore from secrets, patches the generated `build.gradle`, and runs `./gradlew assembleRelease`. The APK is
+uploaded as a run artifact with its size breakdown in the run summary. Roughly 8–10 minutes per architecture,
+and nothing is charged to EAS.
 
-The release workflow reuses an existing release: a rerun that yields the same build number uploads the APKs to
+Signing comes from the existing EAS keystore (same certificate as builds 21/22), so the APK upgrades an
+installed build in place. The four secrets it needs — `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
+`ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` — are already set; `bash scripts/export-signing-secrets.sh`
+re-creates them from `credentials.json` if you ever rotate the key.
+
+`versionCode` is `1000 + github.run_number`. It has to be higher than every previously installed build
+(EAS stopped at 22) and higher on every run, otherwise Android refuses the update — the workflow asserts this
+before assembling.
+
+#### Fallback: `Release APK` — EAS
+
+The `release-arm64` / `release-armv7` profiles still exist and build the same two APKs on EAS, then create the
+release themselves. Keep this as a backup for when the runner environment breaks, since EAS maintains the
+Android image. It costs one EAS build per architecture (free plan: 15/month), so it is not the default.
+
+Either way the release ends up on GitHub Releases, so the **Download APK** button on the landing page always
+points to a real file. The EAS workflow deliberately does **not** trigger on tags: its own release would start
+another build, and each release bumps the version counter, so the chain would never stop.
+
+The EAS workflow reuses an existing release: a rerun that yields the same build number uploads the APKs to
 that release instead of creating a second one.
 
 `bun run update` (OTA, channel `preview`) publishes to both architectures — see
-[Shipping a JS fix](#shipping-a-js-fix-ota).
+[Shipping a JS fix](#shipping-a-js-fix-ota). OTA publishing is an EAS Update call, not an EAS build, so it does
+not consume the build quota.
 
 ## Development
 
