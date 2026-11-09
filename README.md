@@ -107,16 +107,16 @@ A signed APK is built on EAS with the `release` profile and attached to the late
    Local `eas build --profile release --platform android` also works and prints the download URL; you can then
    delete the build.
 
-After that, a new APK is made by:
+After that, a new APK is made by running the workflow manually from the Actions tab (`workflow_dispatch`).
+It builds one APK per architecture, then creates the GitHub release and its `v*` tag itself. The workflow
+deliberately does **not** trigger on tags: its own release would start another build, and each release bumps
+the version counter, so the chain would never stop.
 
-- pushing a tag like `v1.0.0` (triggers `.github/workflows/release-apk.yml`), or
-- running the workflow manually from the Actions tab (`workflow_dispatch`).
-
-The release workflow reuses an existing release: a rerun that yields the same build number uploads the APK to
+The release workflow reuses an existing release: a rerun that yields the same build number uploads the APKs to
 that release instead of creating a second one.
 
-`bun run update` (OTA, channel `preview`) is unaffected — the release profile uses the same channel and
-fingerprint policy, so updates still apply to release-signed APKs.
+`bun run update` (OTA, channel `preview`) publishes to both architectures — see
+[Shipping a JS fix](#shipping-a-js-fix-ota).
 
 ## Development
 
@@ -152,8 +152,8 @@ The release workflow therefore builds **one APK per architecture**, which is abo
 deliberately stays out of `app.json`: `bun run android:tv`, `bun run prebuild` and `expo run:android` leave
 `BUILD_ARCHS` unset and keep building x86/x86_64, so the emulator still works.
 
-`builder: 'local'`-style convenience: to build both arch APKs by hand, use the two profiles and attach them to
-one release (`eas build --profile release-arm64`, then `release-armv7`).
+`bun run update` (OTA) publishes to every architecture, and each one has its own runtime version — see
+[Shipping a JS fix](#shipping-a-js-fix-ota).
 
 Because ABIs are native code, changing them changes the `fingerprint` runtime version: publish a new APK
 and reinstall, OTA updates for the old build will not apply.
