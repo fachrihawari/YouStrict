@@ -4,6 +4,10 @@ dist/
 .site-preview/
 ios/
 android/
+
+# EAS credentials: never commit the keystore or its passwords.
+credentials.json
+credentials/
 npm-debug.*
 *.jks
 *.p8
