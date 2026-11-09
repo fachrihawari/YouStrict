@@ -10,6 +10,14 @@
 // keeps the emulator working and debug builds fast.
 const appJson = require('./app.json');
 
+/**
+ * Android refuses an update whose versionCode is not higher than the installed
+ * one. EAS bumps it through `autoIncrement`, but a plain Gradle build would
+ * always produce versionCode 1 — so the Gradle workflow passes VERSION_CODE
+ * (derived from the GitHub run number) and it always moves forward.
+ */
+const versionCode = Number(process.env.VERSION_CODE ?? 0);
+
 /** @type {import('expo/config').ExpoConfig} */
 module.exports = () => {
   const config = { ...appJson.expo };
@@ -17,6 +25,10 @@ module.exports = () => {
     .split(',')
     .map((arch) => arch.trim())
     .filter(Boolean);
+
+  if (Number.isInteger(versionCode) && versionCode > 0) {
+    config.android = { ...config.android, versionCode };
+  }
 
   if (archs.length > 0) {
     config.plugins = config.plugins.map((plugin) =>
