@@ -35,6 +35,9 @@ jobs:
     env:
       BUILD_ARCHS: ${{ inputs.arch }}
       EXPO_TV: '1'
+      # Must stay above every versionCode ever shipped. EAS is at 22, so a
+      # large offset keeps Gradle builds ahead of it and monotonic across runs.
+      VERSION_CODE: ${{ github.run_number + 1000 }}
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
@@ -55,6 +58,7 @@ jobs:
           grep -E '^android.enableMinifyInReleaseBuilds=' android/gradle.properties
           grep -E '^android.enableShrinkResourcesInReleaseBuilds=' android/gradle.properties
           test "$(grep -c "^reactNativeArchitectures=${BUILD_ARCHS}$" android/gradle.properties)" = 1
+          grep -E "^    versionCode ${VERSION_CODE}$" android/app/build.gradle
 
       - name: Decode the keystore
         env:
