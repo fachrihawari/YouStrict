@@ -35,9 +35,8 @@ jobs:
     env:
       BUILD_ARCHS: ${{ inputs.arch }}
       EXPO_TV: '1'
-      # Must stay above every versionCode ever shipped. EAS is at 22, so a
-      # large offset keeps Gradle builds ahead of it and monotonic across runs.
-      VERSION_CODE: ${{ github.run_number + 1000 }}
+      # Offset applied to the run number before it becomes android.versionCode.
+      VERSION_CODE_OFFSET: '1000'
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
@@ -45,6 +44,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Compute the version code
+        run: |
+          # Must stay above every versionCode ever shipped (EAS is at 22) and
+          # increase on every run, or Android refuses the update.
+          echo "VERSION_CODE=$(( VERSION_CODE_OFFSET + GITHUB_RUN_NUMBER ))" >> "$GITHUB_ENV"
 
       - run: bun install --frozen-lockfile
 
