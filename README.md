@@ -135,6 +135,21 @@ bun run typecheck          # generates Expo Router's typed routes, then tsc
 
 Builds: `eas build --profile preview --platform android` (APK).
 
+### APK size and ABIs
+
+A universal APK carries native code for every Android architecture. On this app the `.so` files were 98 MB
+of a 106 MB APK, and the x86/x86_64 pair alone was ~54 MB — dead weight, since real TVs and phones are ARM.
+
+The `release` profile sets `BUILD_ARCHS=arm64-v8a,armeabi-v7a` (`eas.json`), which `app.config.js` turns into
+`expo-build-properties` → `android.buildArchs`. Only ARM libraries ship, roughly halving the download.
+
+The setting deliberately stays out of `app.json`: `bun run android:tv`, `bun run prebuild` and `expo run:android`
+leave `BUILD_ARCHS` unset and keep building x86/x86_64 so the emulator still works. Build both ABIs
+(`arm64-v8a,armeabi-v7a`) unless every device you install on is 64-bit; `arm64-v8a` alone is smallest.
+
+Because ABIs are native code, changing them changes the `fingerprint` runtime version: publish a new APK
+and reinstall, OTA updates for the old build will not apply.
+
 ### Shipping a JS fix (OTA)
 
 JS updates ride on `expo-updates` config: channel `preview` (`eas.json`) with the `fingerprint`
