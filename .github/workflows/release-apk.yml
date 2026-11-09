@@ -61,16 +61,17 @@ jobs:
 
       - name: Download the APK
         run: |
-          bunx eas-cli@latest build:download \
+          # `--json` prints {"path": "..."}; the file lands in EAS's cache dir,
+          # not in the workspace, so copy it out before the next step.
+          apk_path=$(bunx eas-cli@latest build:download \
             --build-id "${{ steps.meta.outputs.id }}" \
-            --non-interactive
-          apk=$(find . -maxdepth 1 -name '*.apk' -print -quit)
-          if [ -z "$apk" ]; then
+            --json | jq -r '.path')
+          if [ -z "$apk_path" ] || [ ! -f "$apk_path" ]; then
             echo "::error::EAS did not produce an APK artifact."
             exit 1
           fi
-          echo "APK=$apk" >> "$GITHUB_ENV"
-          ls -lh "$apk"
+          cp "$apk_path" ./release.apk
+          ls -lh ./release.apk
 
       - name: Publish the GitHub release
         env:
@@ -82,7 +83,7 @@ jobs:
           tag="v${version}-build${number:-${{ github.run_number }}}"
           name="YouStrict ${version}${number:+ (build $number)}"
           asset="youstrict-${version}-${number:-${{ github.run_number }}}.apk"
-          cp "$APK" "$asset"
+          mv release.apk "$asset"
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" --clobber
