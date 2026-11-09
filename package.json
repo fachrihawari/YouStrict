@@ -14,7 +14,10 @@
     "test": "bun test",
     "typegen": "bun scripts/typegen.ts",
     "typecheck": "bun run typegen && tsc --noEmit",
-    "update": "EXPO_TV=1 eas update --channel preview --platform android"
+    "update": "bun run update:all",
+    "update:all": "bun run update:arm64 && bun run update:armv7",
+    "update:arm64": "BUILD_ARCHS=arm64-v8a EXPO_TV=1 eas update --channel preview --platform android",
+    "update:armv7": "BUILD_ARCHS=armeabi-v7a EXPO_TV=1 eas update --channel preview --platform android"
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.15",

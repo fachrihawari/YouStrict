@@ -4,11 +4,7 @@
     "appVersionSource": "remote"
   },
   "build": {
-    "preview": {
-      "android": {
-        "buildType": "apk",
-        "withoutCredentials": true
-      },
+    "base": {
       "autoIncrement": true,
       "env": {
         "EXPO_TV": "1"
@@ -16,17 +12,36 @@
       "distribution": "internal",
       "channel": "preview"
     },
+    "preview": {
+      "extends": "base",
+      "android": {
+        "buildType": "apk",
+        "withoutCredentials": true
+      }
+    },
     "release": {
+      "extends": "base",
       "android": {
         "buildType": "apk"
       },
-      "autoIncrement": true,
       "env": {
         "EXPO_TV": "1",
         "BUILD_ARCHS": "arm64-v8a,armeabi-v7a"
-      },
-      "distribution": "internal",
-      "channel": "preview"
+      }
+    },
+    "release-arm64": {
+      "extends": "release",
+      "env": {
+        "EXPO_TV": "1",
+        "BUILD_ARCHS": "arm64-v8a"
+      }
+    },
+    "release-armv7": {
+      "extends": "release",
+      "env": {
+        "EXPO_TV": "1",
+        "BUILD_ARCHS": "armeabi-v7a"
+      }
     }
   }
 }
