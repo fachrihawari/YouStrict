@@ -1,7 +1,8 @@
 name: Release APK
 
-# Builds a signed APK on EAS and attaches it to a GitHub Release, so the
-# download button on the landing page (releases/latest) always has a file.
+# Builds a signed APK per CPU architecture on EAS and attaches both to one
+# GitHub Release, so the download button on the landing page (releases/latest)
+# always has a file for every device.
 #
 # One-time setup:
 #   - add an EXPO_TOKEN secret (expo.dev -> Access tokens)
@@ -21,8 +22,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: release-arm64
+            arch: arm64-v8a
+          - profile: release-armv7
+            arch: armeabi-v7a
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
@@ -38,60 +47,117 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      - name: Build the APK on EAS
+      - name: Build ${{ matrix.arch }} on EAS
+        id: build
         run: |
           set -o pipefail
           bunx eas-cli@latest build \
             --platform android \
-            --profile release \
+            --profile "${{ matrix.profile }}" \
             --non-interactive \
             --wait \
             --json > build.json
           cat build.json
-
-      - name: Read version info
-        id: meta
-        run: |
-          build() { jq -r "if type == \"array\" then .[0] else . end | $1 // empty" build.json; }
           {
-            echo "id=$(build .id)"
-            echo "version=$(build .appVersion)"
-            echo "number=$(build .appBuildVersion)"
+            echo "id=$(jq -r 'if type == "array" then .[0] else . end | .id // empty' build.json)"
+            echo "version=$(jq -r 'if type == "array" then .[0] else . end | .appVersion // empty' build.json)"
+            echo "number=$(jq -r 'if type == "array" then .[0] else . end | .appBuildVersion // empty' build.json)"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Download the APK
+      - name: Download the ${{ matrix.arch }} APK
         run: |
           # `--json` prints {"path": "..."}; the file lands in EAS's cache dir,
           # not in the workspace, so copy it out before the next step.
           apk_path=$(bunx eas-cli@latest build:download \
-            --build-id "${{ steps.meta.outputs.id }}" \
+            --build-id "${{ steps.build.outputs.id }}" \
             --json | jq -r '.path')
           if [ -z "$apk_path" ] || [ ! -f "$apk_path" ]; then
             echo "::error::EAS did not produce an APK artifact."
             exit 1
           fi
-          cp "$apk_path" ./release.apk
-          ls -lh ./release.apk
+          cp "$apk_path" "./youstrict-${{ matrix.arch }}.apk"
+          ls -lh "./youstrict-${{ matrix.arch }}.apk"
 
+          # Version info travels with the artifact: matrix jobs each bump the
+          # build number, so the publish job has to see both of them.
+          printf 'version=%s\nnumber=%s\n' \
+            "${{ steps.build.outputs.version }}" \
+            "${{ steps.build.outputs.number }}" > "meta-${{ matrix.arch }}.txt"
+          cat "meta-${{ matrix.arch }}.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ matrix.arch }}
+          path: |
+            youstrict-${{ matrix.arch }}.apk
+            meta-${{ matrix.arch }}.txt
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v4
+        with:
+          path: apks
+          pattern: apk-*
+          merge-multiple: true
+
+      # Both matrix jobs bump the build number, so take the highest one and put
+      # every arch in the same release; `releases/latest` must not depend on
+      # which architecture happened to finish last.
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version="${{ steps.meta.outputs.version }}"
-          number="${{ steps.meta.outputs.number }}"
+          ls -lh apks
+          apk_count=$(ls apks/*.apk 2>/dev/null | wc -l)
+          if [ "$apk_count" -ne 2 ]; then
+            echo "::error::Expected 2 APKs, found $apk_count."
+            exit 1
+          fi
+
+          # Each matrix build bumped the version counter, so the highest one is
+          # the release number; both APKs are published under it.
+          number=$(cat apks/meta-*.txt 2>/dev/null | grep '^number=' | cut -d= -f2 | sort -n | tail -1)
+          version=$(cat apks/meta-*.txt 2>/dev/null | grep '^version=' | cut -d= -f2 | sort -V | tail -1)
+          number="${number:-${{ github.run_number }}}"
           version="${version:-0.0.0}"
-          tag="v${version}-build${number:-${{ github.run_number }}}"
-          name="YouStrict ${version}${number:+ (build $number)}"
-          asset="youstrict-${version}-${number:-${{ github.run_number }}}.apk"
-          mv release.apk "$asset"
+          tag="v${version}-build${number}"
+
+          assets=()
+          for apk in apks/*.apk; do
+            arch=$(basename "$apk" .apk)
+            arch=${arch#youstrict-}
+            mv "$apk" "youstrict-${version}-${arch}.apk"
+            assets+=("youstrict-${version}-${arch}.apk")
+          done
+
+          # Build the notes with printf: a heredoc body would sit at column 0
+          # and break the YAML block scalar this step runs in.
+          {
+            printf 'Signed Android APKs for Android TV, phones and tablets.\n\n'
+            printf 'This release ships one APK per CPU architecture instead of a single\n'
+            printf 'universal APK, which is roughly half the size to download:\n\n'
+            printf -- '- `youstrict-%s-arm64-v8a.apk` — most Android TV boxes, phones and tablets since ~2016\n' "$version"
+            printf -- '- `youstrict-%s-armeabi-v7a.apk` — older 32-bit TVs and cheap TV boxes\n\n' "$version"
+            printf 'Install the one that matches the device. If unsure, try `arm64-v8a` first:\n'
+            printf 'Android refuses an APK built for the wrong architecture, so it cannot break anything.\n\n'
+            printf '### Install\n'
+            printf '1. Download the APK for your device.\n'
+            printf '2. On the TV, allow "Install unknown apps" for the file manager or browser you use.\n'
+            printf '3. Install, open YouStrict, create a PIN, then turn on the channels your child may watch.\n\n'
+            printf 'No account, no subscription. The catalog is cached on the device after the first sync.\n'
+          } > release-notes.md
+          cat release-notes.md
 
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" "$asset" --clobber
+            gh release upload "$tag" "${assets[@]}" --clobber
           else
-            gh release create "$tag" "$asset" \
+            gh release create "$tag" "${assets[@]}" \
               --target "$GITHUB_SHA" \
-              --title "$name" \
-              --notes "Signed Android APK for Android TV, phones and tablets. Check the README for install steps." \
-              --generate-notes \
+              --title "YouStrict ${version} (build ${number})" \
+              --notes-file release-notes.md \
               --latest
           fi

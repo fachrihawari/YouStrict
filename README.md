@@ -140,12 +140,20 @@ Builds: `eas build --profile preview --platform android` (APK).
 A universal APK carries native code for every Android architecture. On this app the `.so` files were 98 MB
 of a 106 MB APK, and the x86/x86_64 pair alone was ~54 MB — dead weight, since real TVs and phones are ARM.
 
-The `release` profile sets `BUILD_ARCHS=arm64-v8a,armeabi-v7a` (`eas.json`), which `app.config.js` turns into
-`expo-build-properties` → `android.buildArchs`. Only ARM libraries ship, roughly halving the download.
+The release workflow therefore builds **one APK per architecture**, which is about half the size each:
 
-The setting deliberately stays out of `app.json`: `bun run android:tv`, `bun run prebuild` and `expo run:android`
-leave `BUILD_ARCHS` unset and keep building x86/x86_64 so the emulator still works. Build both ABIs
-(`arm64-v8a,armeabi-v7a`) unless every device you install on is 64-bit; `arm64-v8a` alone is smallest.
+| Profile | `BUILD_ARCHS` | Device |
+|---|---|---|
+| `release-arm64` | `arm64-v8a` | most Android TV boxes, phones and tablets since ~2016 |
+| `release-armv7` | `armeabi-v7a` | older 32-bit TVs and cheap TV boxes |
+| `release` | `arm64-v8a,armeabi-v7a` | both in one APK, for a quick manual build |
+
+`app.config.js` turns `BUILD_ARCHS` into `expo-build-properties` → `android.buildArchs`. The setting
+deliberately stays out of `app.json`: `bun run android:tv`, `bun run prebuild` and `expo run:android` leave
+`BUILD_ARCHS` unset and keep building x86/x86_64, so the emulator still works.
+
+`builder: 'local'`-style convenience: to build both arch APKs by hand, use the two profiles and attach them to
+one release (`eas build --profile release-arm64`, then `release-armv7`).
 
 Because ABIs are native code, changing them changes the `fingerprint` runtime version: publish a new APK
 and reinstall, OTA updates for the old build will not apply.
@@ -157,8 +165,15 @@ JS updates ride on `expo-updates` config: channel `preview` (`eas.json`) with th
 is never interrupted.
 
 ```bash
-bun run update             # eas update --channel preview, with EXPO_TV=1
+bun run update:arm64       # app/watch screens changed -> 64-bit APK
+bun run update:armv7       # ...and the 32-bit APK
 ```
+
+**Publish both, or one arch stops receiving updates.** `BUILD_ARCHS` is part of the Expo config, which the
+fingerprint hashes, so each architecture has its own `runtimeVersion`. An update only reaches builds whose
+runtime version matches — that is also why a universal APK (`release` profile) is a third, separate track.
+The scripts set `BUILD_ARCHS` for you; running a bare `eas update` would compute a fingerprint matching none
+of the published APKs.
 
 `runtimeVersion` uses the `fingerprint` policy: an update only reaches builds with the same native code.
 After adding or upgrading a native module, build and install a new APK.
