@@ -184,9 +184,13 @@ and reinstall, OTA updates for the old build will not apply.
 
 ### Shipping a JS fix (OTA)
 
-JS updates ride on `expo-updates` config: channel `preview` (`eas.json`) with the `fingerprint`
-`runtimeVersion` policy (`app.json`). A published update applies on the next app start, so a running session
-is never interrupted.
+JS updates ride on `expo-updates` config: channel `preview` with the `fingerprint` `runtimeVersion` policy
+(`app.json`). A published update applies on the next app start, so a running session is never interrupted.
+
+The channel lives in `app.json` → `updates.requestHeaders` (`expo-channel-name: preview`), not only in
+`eas.json`. EAS builds inject the channel themselves, but a plain Gradle build only gets what the Expo config
+says. Without the header, EAS Update answers every update check with HTTP 400, so Gradle releases up to 1007
+never received an OTA update. `release-gradle.yml` now fails the build if the generated manifest lacks it.
 
 ```bash
 bun run update:arm64       # app/watch screens changed -> 64-bit APK
