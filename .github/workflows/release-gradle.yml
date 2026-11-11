@@ -68,6 +68,12 @@ jobs:
           # Indentation inside the generated `android { defaultConfig { ... } }`
           # block is not stable, so match on the value, not on the spaces.
           grep -qE "[[:space:]]versionCode ${VERSION_CODE}[[:space:]]*$" android/app/build.gradle
+          # EAS Update rejects requests without a channel (HTTP 400), so an APK
+          # missing this header would never receive an OTA update.
+          if ! grep -q 'expo-channel-name' android/app/src/main/AndroidManifest.xml; then
+            echo "::error::AndroidManifest.xml has no expo-channel-name request header (app.json updates.requestHeaders)."
+            exit 1
+          fi
           if grep -qE '[[:space:]]versionCode 1[[:space:]]*$' android/app/build.gradle; then
             echo "::error::versionCode is still 1; Android would refuse the update."
             exit 1

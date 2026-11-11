@@ -161,8 +161,16 @@ The release workflow therefore builds **one APK per architecture**, which is abo
 | Profile | `BUILD_ARCHS` | Device |
 |---|---|---|
 | `release-arm64` | `arm64-v8a` | most Android TV boxes, phones and tablets since ~2016 |
-| `release-armv7` | `armeabi-v7a` | older 32-bit TVs and cheap TV boxes |
+| `release-armv7` | `armeabi-v7a` | only 32-bit devices, which refuse the arm64 APK |
 | `release` | `arm64-v8a,armeabi-v7a` | both in one APK, for a quick manual build |
+
+**Never install the `armeabi-v7a` APK on a 64-bit device.** Android accepts it and runs the app as 32-bit,
+but the WebView then pairs it with a 64-bit renderer, and on Android System WebView 156 that renderer
+crashes (SIGSEGV) about a second into every video. The video shows briefly, then the screen goes black.
+Seen on a Realme RMX2103 (Android 11). The arm64 APK of the same build plays normally. `adb shell dumpsys
+package com.fachrihawari.YouStrict | grep primaryCpuAbi` shows which one is installed. The player now
+remounts the WebView when its renderer dies, then shows the error screen if that keeps happening, so the
+screen never stays black. Installing the right APK is still the fix.
 
 `app.config.js` turns `BUILD_ARCHS` into `expo-build-properties` → `android.buildArchs`. The setting
 deliberately stays out of `app.json`: `bun run android:tv`, `bun run prebuild` and `expo run:android` leave
@@ -176,9 +184,13 @@ and reinstall, OTA updates for the old build will not apply.
 
 ### Shipping a JS fix (OTA)
 
-JS updates ride on `expo-updates` config: channel `preview` (`eas.json`) with the `fingerprint`
-`runtimeVersion` policy (`app.json`). A published update applies on the next app start, so a running session
-is never interrupted.
+JS updates ride on `expo-updates` config: channel `preview` with the `fingerprint` `runtimeVersion` policy
+(`app.json`). A published update applies on the next app start, so a running session is never interrupted.
+
+The channel lives in `app.json` → `updates.requestHeaders` (`expo-channel-name: preview`), not only in
+`eas.json`. EAS builds inject the channel themselves, but a plain Gradle build only gets what the Expo config
+says. Without the header, EAS Update answers every update check with HTTP 400, so Gradle releases up to 1007
+never received an OTA update. `release-gradle.yml` now fails the build if the generated manifest lacks it.
 
 ```bash
 bun run update:arm64       # app/watch screens changed -> 64-bit APK

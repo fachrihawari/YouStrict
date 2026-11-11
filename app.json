@@ -53,7 +53,10 @@
       "policy": "fingerprint"
     },
     "updates": {
-      "url": "https://u.expo.dev/66ba3101-5508-4afb-aad6-2274a5f08683"
+      "url": "https://u.expo.dev/66ba3101-5508-4afb-aad6-2274a5f08683",
+      "requestHeaders": {
+        "expo-channel-name": "preview"
+      }
     }
   }
 }

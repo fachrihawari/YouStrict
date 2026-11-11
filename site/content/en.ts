@@ -195,7 +195,7 @@ const content = {
     cta: 'Download the latest APK',
     ctaNote: 'Always the newest build from the Releases page.',
     steps: [
-      { title: 'Download the APK', body: 'Open the Releases page and download the latest .apk file.' },
+      { title: 'Download the APK', body: 'Open the Releases page and download the latest arm64-v8a .apk. Use armeabi-v7a only if Android won’t install the arm64 one.' },
       { title: 'Allow the install', body: 'On the TV, enable “Install unknown apps” for the file manager or browser you use.' },
       { title: 'Install and open', body: 'Open YouStrict, create a PIN, and pick your first channel.' },
     ],
