@@ -195,7 +195,7 @@ const content = {
     cta: 'Unduh APK terbaru',
     ctaNote: 'Selalu build terbaru dari halaman Releases.',
     steps: [
-      { title: 'Unduh APK', body: 'Buka halaman Releases dan unduh file .apk terbaru.' },
+      { title: 'Unduh APK', body: 'Buka halaman Releases dan unduh file .apk arm64-v8a terbaru. Pakai armeabi-v7a hanya kalau yang arm64 tidak bisa dipasang.' },
       { title: 'Izinkan instalasi', body: 'Di TV, aktifkan “Install unknown apps” untuk file manager atau browser yang kamu pakai.' },
       { title: 'Pasang & buka', body: 'Buka YouStrict, buat PIN, lalu pilih channel pertama.' },
     ],

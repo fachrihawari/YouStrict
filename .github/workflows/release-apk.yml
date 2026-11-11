@@ -143,11 +143,12 @@ jobs:
             printf 'This release ships one APK per CPU architecture instead of a single\n'
             printf 'universal APK, which is roughly half the size to download:\n\n'
             printf -- '- `youstrict-%s-arm64-v8a.apk` — most Android TV boxes, phones and tablets since ~2016\n' "$version"
-            printf -- '- `youstrict-%s-armeabi-v7a.apk` — older 32-bit TVs and cheap TV boxes\n\n' "$version"
-            printf 'Install the one that matches the device. If unsure, try `arm64-v8a` first:\n'
-            printf 'Android refuses an APK built for the wrong architecture, so it cannot break anything.\n\n'
+            printf -- '- `youstrict-%s-armeabi-v7a.apk` — only for 32-bit devices that refuse the arm64 APK\n\n' "$version"
+            printf 'Always install `arm64-v8a` first. Use `armeabi-v7a` only if Android refuses to install\n'
+            printf 'the arm64 one. A 64-bit device accepts the 32-bit APK, but the video player crashes on\n'
+            printf 'it: videos start, then the screen goes black.\n\n'
             printf '### Install\n'
-            printf '1. Download the APK for your device.\n'
+            printf '1. Download the `arm64-v8a` APK (or `armeabi-v7a`, see above).\n'
             printf '2. On the TV, allow "Install unknown apps" for the file manager or browser you use.\n'
             printf '3. Install, open YouStrict, create a PIN, then turn on the channels your child may watch.\n\n'
             printf 'No account, no subscription. The catalog is cached on the device after the first sync.\n'
