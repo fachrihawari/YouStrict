@@ -10,6 +10,10 @@ import { useSession } from '@/contexts/session-context';
 
 const OVERLAY_HIDE_MS = 4000;
 const SEEK_SECONDS = 10;
+// Remounts allowed after the WebView's renderer dies before showing the error
+// screen. The count resets once the video has played on for a while.
+const MAX_WEBVIEW_RESTARTS = 2;
+const RESTARTS_RESET_AFTER_SECONDS = 30;
 
 type Phase = 'playing' | 'ended' | 'error' | 'blocked';
 
@@ -42,10 +46,40 @@ export default function PlayerPage() {
 
   useWatchRecorder(id, playing);
 
+  // Android can crash or kill the WebView's renderer process mid-video, which
+  // leaves a dead black view with no events. Remount it and carry on from the
+  // last reported position; if it keeps dying, show the error screen instead.
+  const [webViewKey, setWebViewKey] = useState(0);
+  const restarts = useRef(0);
+  const position = useRef(0);
+  const resumeAt = useRef(0);
+  useEffect(() => {
+    restarts.current = 0;
+    position.current = 0;
+    resumeAt.current = 0;
+  }, [id]);
+
+  const onRenderProcessGone = useCallback(() => {
+    setPlaying(false);
+    if (restarts.current >= MAX_WEBVIEW_RESTARTS) {
+      setPhase('error');
+      return;
+    }
+    restarts.current += 1;
+    resumeAt.current = position.current;
+    setWebViewKey((key) => key + 1);
+  }, []);
+
+  useYouTubeEvent(player, 'ready', () => {
+    if (resumeAt.current > 0) player.seekTo(resumeAt.current, true);
+  }, [player]);
+
   // Tell the session when this video will end, so it can finish if time runs
   // out mid-video. Anything but playing (pause, end, leaving) reports null.
   const { reportPlayback, graceUntil } = useSession();
   useYouTubeEvent(player, 'progress', (progress) => {
+    position.current = progress.currentTime;
+    if (progress.currentTime > resumeAt.current + RESTARTS_RESET_AFTER_SECONDS) restarts.current = 0;
     if (playing && progress.duration > 0) {
       reportPlayback(Date.now() + Math.max(0, progress.duration - progress.currentTime) * 1000);
     }
@@ -101,11 +135,12 @@ export default function PlayerPage() {
   return (
     <View className='flex-1 bg-black'>
       <YoutubeView
+        key={webViewKey}
         player={player}
         // The library defaults width to the window width read at import time (portrait),
         // which leaves the player square after rotating to landscape.
         style={{ flex: 1, width: '100%' }}
-        webViewProps={{ focusable: false, importantForAccessibility: 'no-hide-descendants' }}
+        webViewProps={{ focusable: false, importantForAccessibility: 'no-hide-descendants', onRenderProcessGone }}
       />
 
       {/* Touch shield: blocks taps on the YouTube iframe (logo/links) and shows controls. */}
